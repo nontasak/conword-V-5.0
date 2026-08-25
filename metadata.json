@@ -1,0 +1,13 @@
+{
+  "name": "โปรแกรม conword ใหม่ version 5.0 ",
+  "description": "",
+  "requestFramePermissions": [
+    "clipboard-read",
+    "clipboard-write",
+    "display-capture",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

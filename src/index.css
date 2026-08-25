@@ -1,0 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Sarabun", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --animate-spin-slow: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body {
+  background-color: #b5bdc3;
+  margin: 0;
+  height: 100vh;
+  font-family: 'Sarabun', 'Tahoma', sans-serif;
+}
+
+/* Remove conflicting legacy editor styles */
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Sukhumvit Set', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.menu-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.menu-btn:active {
+  background-color: #d1d5db;
+}
+
+/* Hide old button container styles if no longer used, or keep for reference */
+.button-container {
+  display: none;
+}
+
+.status-bar {
+  background-color: rgb(23, 182, 255);
+  color: #ffffff;
+  padding: 10px;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+#clipboard-buttons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  background-color: #f8f8f8;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.clip-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  color: rgb(0, 0, 0);
+  padding: 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 400px) {
+  #container {
+    width: 90%;
+  }
+
+  .button-container {
+    gap: 4px;
+  }
+
+  .button-container button {
+    padding: 10px 15px;
+    font-size: 14px;
+    min-width: 120px;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 300px) {
+  .button-container {
+    flex-direction: column;
+  }
+
+  .button-container button {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 10px;
+    min-width: unset;
+    max-width: unset;
+  }
+}
+
+/* Clipboard CSS */
+.clipboard-panel {
+  width: 25vw;
+  max-width: 350px;
+  min-width: 220px;
+  height: 100%; /* Adjusted to match new layout */
+  border: 1px solid #ccc;
+  padding: 10px;
+  padding-left: 15px;
+  border-radius: 20px;
+  box-sizing: border-box;
+  background-color: #f8f8f8;
+  outline: none;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Prevent shrinking below min-width, let width/max-width control size */
+}
+
+#clipboard-heading {
+  font-family: 'Arial', sans-serif;
+  font-size: 20px;
+  color: #0b3955;
+  padding: 6px 25px;
+  background-color: #f8f8f8;
+  height: auto;
+  margin-bottom: 5px;
+}
+
+.clipboard-header {
+  background-color: #f8f8f8;
+  flex-shrink: 0;
+}
+
+.clip-list {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+.action-btn {
+  top: 64px;
+  z-index: 1;
+  background-color: #2298e2;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.7em;
+  margin-left: 6px;
+  z-index: 2;
+}
+
+.action-btn:hover {
+  background-color: #148dd8;
+}
+
+.action-btn:active {
+  background-color: #1d638e;
+}
+
+@media only screen and (max-width: 600px) {
+  .clipboard-panel {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+@media only screen and (max-width: 400px) {
+  .clipboard-panel {
+    width: 95%;
+    height: 95%;
+  }
+}
+
+h2, h3 {
+  margin-top: 0;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  width: 96%;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.clipboard-item-box {
+  flex-grow: 1;
+  padding: 9px;
+  border-radius: 5px;
+  background-color: #d3dcff6c;
+  border: 1px solid #d3dcff6c;
+  overflow: hidden;
+  white-space: wrap;
+  text-overflow: ellipsis;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+li span.index-number {
+  margin-right: 8px;
+  font-size: 12px;
+  color: #888;
+  min-width: 20px;
+  text-align: right;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.clipboard-item-box span.item-text {
+  cursor: pointer;
+  flex-grow: 1;
+  margin-left: 5px;
+}
+
+button.edit, button.delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+button.edit {
+  right: 35px;
+  color: rgb(104, 104, 104);
+}
+
+button.delete {
+  right: 10px;
+  color: rgb(104, 104, 104);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button.edit, button.delete {
+    font-size: 1em;
+  }
+
+  button.edit {
+    right: 25px;
+    color: rgb(104, 104, 104);
+  }
+
+  button.delete {
+    right: 1px;
+    color: rgb(104, 104, 104);
+  }
+}
+
+.drag-handle {
+  background: none;
+  border: none;
+  cursor: move;
+  padding-left: 1px;
+  padding-right: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 12px;
+  margin-right: 4px;
+  margin-left: 0;
+  color: rgb(104, 104, 104);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .drag-handle {
+    font-size: 19px;
+    padding-left: 2px;
+    padding-right: 3px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+    background-color: none;
+    border-radius: none;
+  }
+}
+
+#clock {
+  font-family: 'Tahoma', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: 'Sukhumvit Set', 'Tahoma', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.context-menu-item:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.context-menu-item:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.custom-selection::selection {
+  background-color: #3b82f6;
+  color: white; 
+}
+
+/* Custom scrollbar for the editor */
+#textInput {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+  scrollbar-gutter: stable;
+}
+
+#textInput::-webkit-scrollbar {
+  width: 8px;
+}
+
+#textInput::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#textInput::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+#textInput::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+
