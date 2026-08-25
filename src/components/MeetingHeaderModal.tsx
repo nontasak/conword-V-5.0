@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Search, Database, Loader2, Calendar, Clock as ClockIcon, Hash, LogIn, User, MapPin, ChevronDown, Check } from 'lucide-react';
-import { SheetTab } from '../lib/googleSheets';
+import { X, Search, Database, Loader2, Calendar, Clock as ClockIcon, Hash, LogIn, User, MapPin, ChevronDown, Check, RefreshCw } from 'lucide-react';
+import { SheetTab, fetchSpreadsheetMetadata, fetchSheetData, fetchPublicGvizValues } from '../lib/googleSheets';
 import { motion } from 'motion/react';
 import { getAccessToken, googleSignIn } from '../lib/firebase';
 
@@ -41,43 +41,47 @@ export const MeetingHeaderModal: React.FC<MeetingHeaderModalProps> = ({ isOpen, 
     setError(null);
     try {
       const token = await getAccessToken();
-      const response = await fetch('/api/sheets/tabs', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      
-      const contentType = response.headers.get("content-type");
-      if (!response.ok) {
-        let errorMsg = `Server returned error ${response.status}: ${response.statusText}`;
-        if (contentType && contentType.includes("application/json")) {
-          const err = await response.json();
-          errorMsg = err.error || errorMsg;
-          if (response.status === 401) {
-            setError('กรุณาคลิกปุ่มเข้าสู่ระบบด้านบน เพื่ออนุญาตการเข้าถึง Google Sheets');
-            return;
+      let sheets: SheetTab[] = [];
+
+      // 1. Try server/serverless API endpoint
+      try {
+        const response = await fetch('/api/sheets/tabs', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        const contentType = response.headers.get("content-type");
+        if (response.ok && contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          if (data && Array.isArray(data.sheets) && data.sheets.length > 0) {
+            sheets = data.sheets;
           }
-        } else {
-          const text = await response.text();
-          console.error('Non-JSON error response:', text.substring(0, 200));
         }
-        throw new Error(errorMsg);
+      } catch (e) {
+        console.log('Fetching /api/sheets/tabs failed, attempting client fallback...', e);
       }
-      
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        const sheets = data.sheets || [];
+
+      // 2. Fallback: If no sheets and token exists, call Google Sheets API directly
+      if (sheets.length === 0 && token) {
+        try {
+          const meta = await fetchSpreadsheetMetadata(token);
+          if (meta && Array.isArray(meta.sheets) && meta.sheets.length > 0) {
+            sheets = meta.sheets;
+          }
+        } catch (e) {
+          console.warn('Direct Google Sheets API metadata call failed:', e);
+        }
+      }
+
+      if (sheets.length > 0) {
         setTabs(sheets);
         
-        // Select the latest tab (first one in the list) as requested by user
-        if (sheets.length > 0) {
-          const firstSheetTitle = sheets[0].properties.title;
-          if (!selectedTab || !sheets.find(s => s.properties.title === selectedTab)) {
-            setSelectedTab(firstSheetTitle);
-          }
+        // Select the latest tab (first one in the list)
+        const firstSheetTitle = sheets[0].properties.title;
+        if (!selectedTab || !sheets.find(s => s.properties.title === selectedTab)) {
+          setSelectedTab(firstSheetTitle);
         }
       } else {
-        const text = await response.text();
-        console.error('Expected JSON but got:', text.substring(0, 200));
-        throw new Error("Server did not return JSON. Please check if the server is running correctly.");
+        throw new Error('ไม่พบข้อมูลแท็บ หรือเซิร์ฟเวอร์ยังไม่พร้อมใช้งาน หากตารางเป็นส่วนตัว กรุณาคลิก "เข้าสู่ระบบด้วย Google"');
       }
     } catch (err: any) {
       console.error('Failed to load tabs:', err);
@@ -108,88 +112,98 @@ export const MeetingHeaderModal: React.FC<MeetingHeaderModalProps> = ({ isOpen, 
     setError(null);
     try {
       const token = await getAccessToken();
-      const response = await fetch(`/api/sheets/values?sheetTitle=${encodeURIComponent(selectedTab)}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
+      let rows: any[][] = [];
+
+      // 1. Try server/serverless endpoint
+      try {
+        const response = await fetch(`/api/sheets/values?sheetTitle=${encodeURIComponent(selectedTab)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        const contentType = response.headers.get("content-type");
+        if (response.ok && contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            rows = data;
+          }
+        }
+      } catch (e) {
+        console.log('Fetching /api/sheets/values failed, attempting direct public gviz fallback...', e);
+      }
+
+      // 2. Fallback: try public gviz query directly from browser
+      if (rows.length === 0) {
+        try {
+          rows = await fetchPublicGvizValues(selectedTab);
+        } catch (e) {
+          console.log('Direct gviz query failed, attempting Google API with token...', e);
+        }
+      }
+
+      // 3. Fallback: try Google Sheets API directly with access token
+      if (rows.length === 0 && token) {
+        try {
+          rows = await fetchSheetData(token, selectedTab);
+        } catch (e) {
+          console.warn('Direct Google Sheets API fetchSheetData failed:', e);
+        }
+      }
+
+      if (rows.length < 1) {
+        setMeetings([]);
+        return;
+      }
+
+      // Improved Parsing logic
+      // Search for date in first 8 rows
+      let dateVal = '';
+      const dateKeywords = ['วันที่', 'ประจำวันที่', 'พ.ศ.'];
+      for (let i = 0; i < Math.min(8, rows.length); i++) {
+        const rowText = rows[i].join(' ');
+        if (dateKeywords.some(k => rowText.includes(k))) {
+          dateVal = rows[i].find((c: any) => typeof c === 'string' && dateKeywords.some(k => c.includes(k))) || '';
+          if (dateVal.length < 10) {
+             dateVal = rows[i].join(' ');
+          }
+          break;
+        }
+      }
       
-      const contentType = response.headers.get("content-type");
-      if (!response.ok) {
-        let errorMsg = `Server returned error ${response.status}: ${response.statusText}`;
-        if (contentType && contentType.includes("application/json")) {
-          const err = await response.json();
-          errorMsg = err.error || errorMsg;
-          if (response.status === 401) {
-            setError('กรุณาคลิกปุ่มเข้าสู่ระบบด้านบน เพื่ออนุญาตการเข้าถึง Google Sheets');
-            return;
-          }
+      // Find header row (row containing 'คณะ' or 'ชื่อ')
+      let headerRowIndex = -1;
+      for (let i = 0; i < Math.min(15, rows.length); i++) {
+        const rowText = rows[i].join(' ');
+        if (rowText.includes('คณะ') || rowText.includes('หน่วยงาน') || rowText.includes('ชื่อการประชุม')) {
+          headerRowIndex = i;
+          break;
         }
-        throw new Error(errorMsg);
       }
 
-      if (contentType && contentType.includes("application/json")) {
-        const rows = await response.json();
-        if (rows.length < 1) {
-          setMeetings([]);
-          return;
-        }
+      // Fallback date from tab title if not found in content
+      const finalDate = cleanDateString(dateVal || selectedTab);
+      
+      const startDataRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 1;
+      
+      const meetingList: MeetingData[] = rows.slice(startDataRow).map((row: any[], index: number) => {
+        const seq = String(row[0] || '').trim();
+        const time = String(row[1] || '').trim();
+        const name = String(row[2] || '').trim();
+        const reporter = String(row[3] || '').trim();
+        const room = String(row[4] || '').trim();
 
-        // Improved Parsing logic
-        // Search for date in first 5 rows
-        let dateVal = '';
-        const dateKeywords = ['วันที่', 'ประจำวันที่', 'พ.ศ.'];
-        for (let i = 0; i < Math.min(8, rows.length); i++) {
-          const rowText = rows[i].join(' ');
-          if (dateKeywords.some(k => rowText.includes(k))) {
-            // Found a row that likely contains the date
-            dateVal = rows[i].find((c: any) => typeof c === 'string' && dateKeywords.some(k => c.includes(k))) || '';
-            // Try to extract full date string from the row if it's split
-            if (dateVal.length < 10) {
-               dateVal = rows[i].join(' ');
-            }
-            break;
-          }
-        }
-        
-        // Find header row (row containing 'คณะ' or 'ชื่อ')
-        let headerRowIndex = -1;
-        for (let i = 0; i < Math.min(15, rows.length); i++) {
-          const rowText = rows[i].join(' ');
-          if (rowText.includes('คณะ') || rowText.includes('หน่วยงาน') || rowText.includes('ชื่อการประชุม')) {
-            headerRowIndex = i;
-            break;
-          }
-        }
+        return {
+          id: index,
+          seq: seq || String(index + 1),
+          name: name || 'ไม่มีชื่อการประชุม',
+          time: time || 'ไม่ระบุเวลา',
+          date: finalDate,
+          reporter: reporter,
+          room: room,
+          raw: row
+        };
+      }).filter((m: MeetingData) => m.name !== 'ไม่มีชื่อการประชุม' && m.name.trim().length > 0 && !m.name.includes('ลงชื่อ'));
 
-        // Fallback date from tab title if not found in content
-        const finalDate = cleanDateString(dateVal || selectedTab);
-        
-        const startDataRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 1;
-        
-        const meetingList: MeetingData[] = rows.slice(startDataRow).map((row: any[], index: number) => {
-          // Column layout from user description: Sequence, Time, Name, Reporter, Room
-          // Assuming: A: Seq, B: Time, C: Name, D: Reporter, E: Room
-          const seq = String(row[0] || '').trim();
-          const time = String(row[1] || '').trim();
-          const name = String(row[2] || '').trim();
-          const reporter = String(row[3] || '').trim();
-          const room = String(row[4] || '').trim();
-
-          return {
-            id: index,
-            seq: seq || String(index + 1),
-            name: name || 'ไม่มีชื่อการประชุม',
-            time: time || 'ไม่ระบุเวลา',
-            date: finalDate,
-            reporter: reporter,
-            room: room,
-            raw: row
-          };
-        }).filter((m: MeetingData) => m.name !== 'ไม่มีชื่อการประชุม' && m.name.trim().length > 0 && !m.name.includes('ลงชื่อ'));
-
-        setMeetings(meetingList);
-      } else {
-        throw new Error("Server did not return JSON for values.");
-      }
+      setMeetings(meetingList);
     } catch (err: any) {
       console.error('Failed to load meetings:', err);
       setError('ไม่สามารถโหลดข้อมูลการประชุมได้: ' + (err.message || 'ไม่ทราบสาเหตุ'));
@@ -287,22 +301,44 @@ export const MeetingHeaderModal: React.FC<MeetingHeaderModalProps> = ({ isOpen, 
               <p className="text-xs text-gray-500 font-medium">ดึงข้อมูลจาก Google Sheets ของคุณ</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleLogin} 
+              disabled={isAuthLoading}
+              title="เข้าสู่ระบบด้วย Google"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-all"
+            >
+              {isAuthLoading ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+              <span>เข้าสู่ระบบ Google</span>
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-gray-600">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center justify-between">
-              <span>{error}</span>
-              <button 
-                onClick={() => { loadTabs(); if (selectedTab) loadMeetings(); }}
-                className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-semibold transition-all"
-              >
-                ลองใหม่
-              </button>
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="flex-1">{error}</span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={handleLogin}
+                  disabled={isAuthLoading}
+                  className="px-3 py-1 bg-white border border-red-200 hover:bg-red-50 text-red-800 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                >
+                  {isAuthLoading ? <Loader2 size={12} className="animate-spin" /> : <LogIn size={12} />}
+                  เข้าสู่ระบบ
+                </button>
+                <button 
+                  onClick={() => { loadTabs(); if (selectedTab) loadMeetings(); }}
+                  className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                >
+                  <RefreshCw size={12} />
+                  ลองใหม่
+                </button>
+              </div>
             </div>
           )}
             <>
@@ -571,4 +607,5 @@ export const MeetingHeaderModal: React.FC<MeetingHeaderModalProps> = ({ isOpen, 
     </div>
   );
 };
+
 
