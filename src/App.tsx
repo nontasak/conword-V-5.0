@@ -35,6 +35,7 @@ import {
   setUserClearedState
 } from './utils/persistentStorage';
 import { initAuth } from './lib/firebase';
+import conwordLogo from './assets/images/conwordv5logo.png';
 import { ChevronUp, ChevronDown, Save, FileText, Check, AlertCircle, Copy, Eraser, Minus, Plus, Type, Settings, Keyboard, PanelLeft, PanelRight, Scissors, ClipboardPaste, Search, ArrowDownToLine, Crosshair, Users, Image as ImageIcon, Wand2, ChevronRight, BrainCircuit, Undo2, Redo2, Layout, History } from 'lucide-react';
 
 // Clock Component
@@ -1842,9 +1843,15 @@ function App() {
             title="Conword V.5"
           >
             <img 
-              src="/logo.png" 
+              src={conwordLogo} 
               alt="Conword Logo" 
               referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.endsWith('/logo.png')) {
+                  target.src = '/logo.png';
+                }
+              }}
               className={`transition-all duration-200 object-contain drop-shadow-xs shrink-0 ${isMenuBarCollapsed ? 'w-5 h-5 min-w-[20px]' : 'w-6 h-6 sm:w-7 sm:h-7 min-w-[24px]'}`}
             />
           </div>
@@ -2277,7 +2284,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.14 26/08/69 15.10</span>
+        <span>เวอร์ชั่น 5.15 26/08/69 15.25</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
