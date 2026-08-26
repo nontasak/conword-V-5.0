@@ -210,36 +210,43 @@ function App() {
   const [showMarginLine, setShowMarginLine] = useState(false);
   const marginDragRef = useRef(false);
 
-  const handleMarginMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    marginDragRef.current = true;
-    setShowMarginLine(true);
-    document.addEventListener('mousemove', handleMarginMouseMove);
-    document.addEventListener('mouseup', handleMarginMouseUp);
-  };
-
-  const handleMarginMouseMove = (e: MouseEvent) => {
-    if (!marginDragRef.current || !editorContainerRef.current || !textareaRef.current) return;
+  const updateMarginFromClientY = (clientY: number) => {
+    if (!editorContainerRef.current || !textareaRef.current) return;
     const rect = editorContainerRef.current.getBoundingClientRect();
-    // Distance from bottom of container to mouse
-    const newBottomMargin = rect.bottom - e.clientY;
+    // Distance from bottom of container to mouse / touch point
+    const newBottomMargin = rect.bottom - clientY;
     // Limit margin between 0 and 80% of height
     const clampedMargin = Math.max(0, Math.min(newBottomMargin, rect.height * 0.8));
     
     const textarea = textareaRef.current;
     const isAtBottom = textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight - 50;
-    const delta = clampedMargin - bottomMargin;
 
-    setBottomMargin(clampedMargin);
+    setBottomMargin(prev => {
+      const delta = clampedMargin - prev;
+      if (isAtBottom && delta > 0) {
+        // Force scroll to follow the margin increase
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            textareaRef.current.scrollTop += delta;
+          }
+        });
+      }
+      return clampedMargin;
+    });
+  };
 
-    if (isAtBottom && delta > 0) {
-      // Force scroll to follow the margin increase
-      requestAnimationFrame(() => {
-        if (textareaRef.current) {
-          textareaRef.current.scrollTop += delta;
-        }
-      });
-    }
+  const handleMarginMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    marginDragRef.current = true;
+    setShowMarginLine(true);
+    updateMarginFromClientY(e.clientY);
+    document.addEventListener('mousemove', handleMarginMouseMove);
+    document.addEventListener('mouseup', handleMarginMouseUp);
+  };
+
+  const handleMarginMouseMove = (e: MouseEvent) => {
+    if (!marginDragRef.current) return;
+    updateMarginFromClientY(e.clientY);
   };
 
   const handleMarginMouseUp = () => {
@@ -248,6 +255,45 @@ function App() {
     document.removeEventListener('mousemove', handleMarginMouseMove);
     document.removeEventListener('mouseup', handleMarginMouseUp);
   };
+
+  const handleMarginTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length > 0) {
+      marginDragRef.current = true;
+      setShowMarginLine(true);
+      updateMarginFromClientY(e.touches[0].clientY);
+      document.addEventListener('touchmove', handleMarginTouchMove, { passive: false });
+      document.addEventListener('touchend', handleMarginTouchEnd);
+      document.addEventListener('touchcancel', handleMarginTouchEnd);
+    }
+  };
+
+  const handleMarginTouchMove = (e: TouchEvent) => {
+    if (!marginDragRef.current) return;
+    if (e.touches.length > 0) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      updateMarginFromClientY(e.touches[0].clientY);
+    }
+  };
+
+  const handleMarginTouchEnd = () => {
+    marginDragRef.current = false;
+    setShowMarginLine(false);
+    document.removeEventListener('touchmove', handleMarginTouchMove);
+    document.removeEventListener('touchend', handleMarginTouchEnd);
+    document.removeEventListener('touchcancel', handleMarginTouchEnd);
+  };
+
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('mousemove', handleMarginMouseMove);
+      document.removeEventListener('mouseup', handleMarginMouseUp);
+      document.removeEventListener('touchmove', handleMarginTouchMove);
+      document.removeEventListener('touchend', handleMarginTouchEnd);
+      document.removeEventListener('touchcancel', handleMarginTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('bottomMargin', bottomMargin.toString());
@@ -593,6 +639,18 @@ function App() {
   const [isCopyMenuOpen, setIsCopyMenuOpen] = useState(false);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
+  const [isMenuBarCollapsed, setIsMenuBarCollapsed] = useState(() => {
+    return localStorage.getItem('isMenuBarCollapsed') === 'true';
+  });
+
+  const toggleMenuBar = () => {
+    setIsMenuBarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('isMenuBarCollapsed', String(next));
+      return next;
+    });
+  };
+
   const copyMenuRef = useRef<HTMLDivElement>(null);
   const toolsMenuRef = useRef<HTMLDivElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -1760,23 +1818,25 @@ function App() {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between', 
-        padding: '8px 16px', 
+        padding: isMenuBarCollapsed ? '4px 12px' : '8px 16px', 
+        minHeight: isMenuBarCollapsed ? '36px' : '46px',
         backgroundColor: '#f3f4f6', 
         borderBottom: '1px solid #e5e7eb',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        transition: 'all 0.2s ease-in-out'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '6px' : '12px' }}>
           {/* Save Status Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', marginRight: isMenuBarCollapsed ? '6px' : '14px' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title={hasUnsavedChanges ? "Unsaved changes" : "Saved"}>
-              <Save size={20} color="#4b5563" />
+              <Save size={isMenuBarCollapsed ? 16 : 20} color="#4b5563" />
               {hasUnsavedChanges && (
                 <div style={{
                   position: 'absolute',
                   top: -2,
                   right: -2,
-                  width: '8px',
-                  height: '8px',
+                  width: isMenuBarCollapsed ? '6px' : '8px',
+                  height: isMenuBarCollapsed ? '6px' : '8px',
                   backgroundColor: '#f97316', // Orange dot
                   borderRadius: '50%',
                   border: '1px solid #f3f4f6'
@@ -1784,14 +1844,14 @@ function App() {
               )}
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid #d1d5db', paddingLeft: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', borderLeft: '1px solid #d1d5db', paddingLeft: isMenuBarCollapsed ? '4px' : '8px' }}>
               <button 
                 onClick={handleUndo} 
                 disabled={!canUndo}
                 className={`p-1 rounded flex items-center justify-center transition-all duration-200 border ${canUndo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
                 title="เลิกทำ (Undo)"
               >
-                <Undo2 size={18} color={canUndo ? "#1f2937" : "#9ca3af"} />
+                <Undo2 size={isMenuBarCollapsed ? 15 : 18} color={canUndo ? "#1f2937" : "#9ca3af"} />
               </button>
               <button 
                 onClick={handleRedo} 
@@ -1799,16 +1859,16 @@ function App() {
                 className={`p-1 rounded flex items-center justify-center transition-all duration-200 border ${canRedo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
                 title="ทำซ้ำ (Redo)"
               >
-                <Redo2 size={18} color={canRedo ? "#1f2937" : "#9ca3af"} />
+                <Redo2 size={isMenuBarCollapsed ? 15 : 18} color={canRedo ? "#1f2937" : "#9ca3af"} />
               </button>
               <button 
                 onClick={() => setIsHistoryModalOpen(true)} 
                 className="menu-btn" 
-                style={{ marginLeft: '4px' }}
+                style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px', padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
                 title="ประวัติการบันทึกข้อความย้อนหลัง (ป้องกันข้อความหายในเครื่อง)"
               >
-                <History size={16} style={{ marginRight: '6px' }} />
-                ประวัติ
+                <History size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
+                {!isMenuBarCollapsed && 'ประวัติ'}
               </button>
             </div>
           </div>
@@ -1817,11 +1877,14 @@ function App() {
           <button 
             onClick={handleClear} 
             className="menu-btn"
-            style={{ color: isConfirmingClear ? '#ef4444' : 'inherit' }}
-            title="ล้างข้อความทั้งหมด (มีระบบสำรองข้อมูลฉุกเฉิน)"
+            style={{ 
+              color: isConfirmingClear ? '#ef4444' : 'inherit',
+              padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px'
+            }}
+            title={isConfirmingClear ? 'คลิกอีกครั้งเพื่อยืนยันล้างข้อความ!' : 'ล้างข้อความทั้งหมด (มีระบบสำรองข้อมูลฉุกเฉิน)'}
           >
-            <Eraser size={16} style={{ marginRight: '6px' }} />
-            {isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ'}
+            <Eraser size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
+            {!isMenuBarCollapsed && (isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ')}
           </button>
           {/* Copy Split Button (Horizontal) */}
           <div className="relative inline-flex items-center" ref={copyMenuRef}>
@@ -1829,10 +1892,10 @@ function App() {
               {/* Action 1: Click Icon to Copy All Text Immediately */}
               <button 
                 onClick={handleCopy} 
-                className="p-1.5 hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer"
+                className={`${isMenuBarCollapsed ? 'px-2 py-1' : 'px-3.5 py-1.5'} hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer ${isMenuBarCollapsed ? 'min-w-[28px]' : 'min-w-[38px]'}`}
                 title="คัดลอกข้อความทั้งหมด (คลิกไอคอนเพื่อคัดลอกทันที)"
               >
-                <Copy size={16} />
+                <Copy size={isMenuBarCollapsed ? 14 : 16} />
               </button>
 
               {/* Subtle Vertical Divider */}
@@ -1841,11 +1904,11 @@ function App() {
               {/* Action 2: Click Label & Arrow to Open Copy Options */}
               <button 
                 onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)} 
-                className={`px-2 py-1.5 hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-sm font-sans ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
+                className={`${isMenuBarCollapsed ? 'px-1.5 py-1' : 'px-2 py-1.5'} hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-sm font-sans ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
                 title="ตัวเลือกการคัดลอก (คลิกเพื่อเลือกคัดลอกข้อความหรือคลิปบอร์ด)"
               >
-                <span>คัดลอก</span>
-                <ChevronDown size={13} className={`transition-transform duration-200 ${isCopyMenuOpen ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} />
+                {!isMenuBarCollapsed && <span>คัดลอก</span>}
+                <ChevronDown size={isMenuBarCollapsed ? 11 : 13} className={`transition-transform duration-200 ${isCopyMenuOpen ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} />
               </button>
             </div>
 
@@ -1888,40 +1951,48 @@ function App() {
               </div>
             )}
           </div>
-          <button onClick={() => setIsHeaderModalOpen(true)} className="menu-btn" title="พิมพ์ส่วนหัวจากการประชุม">
-            <Layout size={16} style={{ marginRight: '6px' }} />
-            พิมพ์ส่วนหัว
+          <button 
+            onClick={() => setIsHeaderModalOpen(true)} 
+            className="menu-btn" 
+            style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+            title="พิมพ์ส่วนหัวจากการประชุม"
+          >
+            <Layout size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
+            {!isMenuBarCollapsed && 'พิมพ์ส่วนหัว'}
           </button>
           <button 
             onClick={() => setIsSpeechTranscriberOpen(true)} 
             className="menu-btn" 
+            style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
             title="พิมพ์ด้วยเสียง (Speech to Text)"
           >
-            <Mic size={16} style={{ marginRight: '6px' }} />
-            พิมพ์ด้วยเสียง
+            <Mic size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
+            {!isMenuBarCollapsed && 'พิมพ์ด้วยเสียง'}
           </button>
 
           {/* Font Size Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '12px', borderLeft: '1px solid #e5e7eb', paddingLeft: '12px' }}>
-            <Type size={16} color="#6b7280" style={{ marginRight: '8px' }} />
-            <button onClick={handleDecreaseFontSize} className="menu-btn" style={{ padding: '4px 8px' }} title="ลดขนาดตัวอักษร">
-              <Minus size={14} />
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: isMenuBarCollapsed ? '4px' : '12px', borderLeft: '1px solid #e5e7eb', paddingLeft: isMenuBarCollapsed ? '6px' : '12px' }}>
+            {!isMenuBarCollapsed && <Type size={16} color="#6b7280" style={{ marginRight: '8px' }} />}
+            <button onClick={handleDecreaseFontSize} className="menu-btn" style={{ padding: isMenuBarCollapsed ? '2px 5px' : '4px 8px' }} title="ลดขนาดตัวอักษร">
+              <Minus size={isMenuBarCollapsed ? 12 : 14} />
             </button>
-            <span style={{ margin: '0 8px', fontSize: '14px', color: '#374151', minWidth: '20px', textAlign: 'center' }}>{fontSize}</span>
-            <button onClick={handleIncreaseFontSize} className="menu-btn" style={{ padding: '4px 8px' }} title="เพิ่มขนาดตัวอักษร">
-              <Plus size={14} />
+            <span style={{ margin: isMenuBarCollapsed ? '0 4px' : '0 8px', fontSize: isMenuBarCollapsed ? '12px' : '14px', color: '#374151', minWidth: '18px', textAlign: 'center' }}>{fontSize}</span>
+            <button onClick={handleIncreaseFontSize} className="menu-btn" style={{ padding: isMenuBarCollapsed ? '2px 5px' : '4px 8px' }} title="เพิ่มขนาดตัวอักษร">
+              <Plus size={isMenuBarCollapsed ? 12 : 14} />
             </button>
           </div>
 
           {/* Settings Dropdown */}
-          <div className="relative" ref={settingsMenuRef} style={{ marginLeft: '6px' }}>
+          <div className="relative" ref={settingsMenuRef} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '6px' }}>
             <button 
               onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)} 
               className={`menu-btn ${isSettingsMenuOpen ? 'bg-blue-50 text-blue-600' : ''}`}
+              style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+              title="ตั้งค่า (คำย่อ/คีย์ลัด)"
             >
-              <Settings size={16} style={{ marginRight: '6px' }} />
-              ตั้งค่า
-              <ChevronDown size={14} style={{ marginLeft: '4px' }} />
+              <Settings size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
+              {!isMenuBarCollapsed && 'ตั้งค่า'}
+              <ChevronDown size={isMenuBarCollapsed ? 11 : 14} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px' }} />
             </button>
             
             {isSettingsMenuOpen && (
@@ -1951,36 +2022,80 @@ function App() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '500', color: '#374151', marginRight: '8px' }}>
-           <button 
+        {/* Right Section: Tool Toggles + Clock + Menu Bar Fold/Expand Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '6px' : '10px', fontSize: isMenuBarCollapsed ? '12px' : '14px', fontWeight: '500', color: '#374151' }}>
+          {/* Left Clipboard Toggle */}
+          <button 
             className="menu-btn" 
             onClick={() => setIsLeftClipboardOpen(!isLeftClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดซ้าย"
-            style={{ padding: '4px 8px', color: isLeftClipboardOpen ? '#2563eb' : '#6b7280' }}
+            style={{ 
+              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              color: isLeftClipboardOpen ? '#2563eb' : '#6b7280',
+              backgroundColor: isLeftClipboardOpen ? '#eff6ff' : 'transparent',
+              borderRadius: '4px'
+            }}
           >
-            <PanelLeft size={18} />
+            <PanelLeft size={isMenuBarCollapsed ? 15 : 18} />
           </button>
 
+          {/* Right Clipboard Toggle */}
           <button 
             className="menu-btn" 
             onClick={() => setIsClipboardOpen(!isClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดขวา"
-            style={{ padding: '4px 8px', color: isClipboardOpen ? '#2563eb' : '#6b7280' }}
+            style={{ 
+              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              color: isClipboardOpen ? '#2563eb' : '#6b7280',
+              backgroundColor: isClipboardOpen ? '#eff6ff' : 'transparent',
+              borderRadius: '4px'
+            }}
           >
-            <PanelRight size={18} />
+            <PanelRight size={isMenuBarCollapsed ? 15 : 18} />
           </button>
 
+          {/* Search Toggle (Google) */}
           <button 
             className="menu-btn" 
             onClick={() => setIsSearchOpen(!isSearchOpen)}
-            title="เปิด/ปิด ผู้ช่วยค้นหา"
-            style={{ padding: '4px 8px', color: isSearchOpen ? '#2563eb' : '#6b7280' }}
+            title="เปิด/ปิด ผู้ช่วยค้นหา Google"
+            style={{ 
+              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              color: isSearchOpen ? '#2563eb' : '#6b7280',
+              backgroundColor: isSearchOpen ? '#eff6ff' : 'transparent',
+              borderRadius: '4px'
+            }}
           >
-            <Search size={18} />
+            <Search size={isMenuBarCollapsed ? 15 : 18} />
           </button>
           
-          <div style={{ marginLeft: '8px', borderLeft: '1px solid #e5e7eb', paddingLeft: '12px' }}>
+          {/* Clock */}
+          <div style={{ 
+            marginLeft: isMenuBarCollapsed ? '4px' : '6px', 
+            borderLeft: '1px solid #e5e7eb', 
+            paddingLeft: isMenuBarCollapsed ? '8px' : '10px',
+            fontSize: isMenuBarCollapsed ? '12px' : '14px'
+          }}>
             <Clock />
+          </div>
+
+          {/* Menu Bar Collapse / Expand Toggle Button (หลังนาฬิกา) */}
+          <div style={{ marginLeft: '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: '8px' }}>
+            <button
+              onClick={toggleMenuBar}
+              className={`flex items-center justify-center cursor-pointer transition-all duration-200 p-1 rounded ${
+                isMenuBarCollapsed 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs border border-blue-600'
+                  : 'bg-gray-200/90 hover:bg-gray-300 text-gray-700 hover:text-gray-900 border border-gray-300'
+              }`}
+              title={isMenuBarCollapsed ? "กางแถบเมนูบาร์ (ขยาย)" : "พับแถบเมนูบาร์ (ย่อเหลือเฉพาะไอคอน)"}
+            >
+              {isMenuBarCollapsed ? (
+                <ChevronDown size={isMenuBarCollapsed ? 15 : 16} className="text-white" />
+              ) : (
+                <ChevronUp size={isMenuBarCollapsed ? 15 : 16} className="text-gray-600" />
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -2044,6 +2159,7 @@ function App() {
               {/* Bottom Margin Handle */}
               <div 
                 onMouseDown={handleMarginMouseDown}
+                onTouchStart={handleMarginTouchStart}
                 title="ปรับระยะเว้นขอบด้านล่าง"
                 style={{
                   position: 'absolute',
@@ -2056,24 +2172,31 @@ function App() {
                   transform: 'translateY(50%)',
                   cursor: 'ns-resize',
                   zIndex: 30, // Above everything
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  touchAction: 'none'
                 }}
               >
                 <div 
+                  onMouseDown={handleMarginMouseDown}
+                  onTouchStart={handleMarginTouchStart}
                   style={{ 
                     pointerEvents: 'auto',
+                    touchAction: 'none',
                     backgroundColor: 'white',
-                    borderRadius: '4px 0 0 4px',
+                    borderRadius: '6px 0 0 6px',
                     boxShadow: '-2px 1px 4px rgba(0,0,0,0.2)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '32px',
-                    height: '32px',
+                    width: '36px',
+                    height: '36px',
                     border: '1px solid #e5e7eb',
                     borderRight: 'none',
-                    marginLeft: '-32px',
-                    transition: 'transform 0.1s ease-out'
+                    marginLeft: '-36px',
+                    transition: 'transform 0.1s ease-out',
+                    cursor: 'ns-resize',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none'
                   }}
                 >
                   <ChevronRight size={20} style={{ color: '#3b82f6' }} />
@@ -2136,7 +2259,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.0 25/08/69 15.13</span>
+        <span>เวอร์ชั่น 5.7 26/08/69 13.41</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>

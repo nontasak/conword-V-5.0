@@ -12,6 +12,44 @@ export interface SpreadsheetData {
 
 export const SPREADSHEET_ID = '1GPwZFjNloVXimhpu7Vm3K2e5PN2SjgIvBb_DU-hdDpE';
 
+export function parseHtmlForTabs(html: string): SheetTab[] {
+  const sheets: SheetTab[] = [];
+  const itemBlocks = [...html.matchAll(/items\.push\((\{[\s\S]*?\})\);/g)];
+
+  for (const block of itemBlocks) {
+    const str = block[1];
+    const nameMatch = str.match(/name:\s*["'](.*?)["'],/s);
+    const gidMatch = str.match(/gid:\s*["']([0-9]+)["']/);
+    if (nameMatch && gidMatch) {
+      const title = nameMatch[1].replace(/\\/g, '').trim();
+      const gid = gidMatch[1];
+      if (!sheets.find(s => String(s.properties.sheetId) === String(gid))) {
+        sheets.push({
+          properties: {
+            sheetId: gid,
+            title: title
+          }
+        });
+      }
+    }
+  }
+
+  if (sheets.length === 0) {
+    const titleRegex = /<li id="sheet-button-([0-9]+)"><a [^>]*>([^<]+)<\/a>/g;
+    let match;
+    while ((match = titleRegex.exec(html)) !== null) {
+      sheets.push({
+        properties: {
+          sheetId: match[1],
+          title: match[2].trim()
+        }
+      });
+    }
+  }
+
+  return sheets;
+}
+
 export async function fetchSpreadsheetMetadata(accessToken: string): Promise<SpreadsheetData> {
   const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=spreadsheetId,sheets.properties`, {
     headers: {
@@ -67,4 +105,63 @@ export async function fetchPublicGvizValues(sheetTitle: string): Promise<any[][]
     });
   });
 }
+
+export async function fetchPublicTabsFallback(): Promise<SheetTab[]> {
+  const targetUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlview`;
+  
+  // 1. Direct fetch attempt
+  try {
+    const res = await fetch(targetUrl);
+    if (res.ok) {
+      const html = await res.text();
+      const tabs = parseHtmlForTabs(html);
+      if (tabs.length > 0) return tabs;
+    }
+  } catch (e) {
+    // Expected in browser if CORS blocked
+  }
+
+  // 2. allorigins proxy attempt
+  try {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const html = await res.text();
+      const tabs = parseHtmlForTabs(html);
+      if (tabs.length > 0) return tabs;
+    }
+  } catch (e) {
+    console.warn('allorigins proxy for htmlview failed:', e);
+  }
+
+  // 3. corsproxy.io attempt
+  try {
+    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const html = await res.text();
+      const tabs = parseHtmlForTabs(html);
+      if (tabs.length > 0) return tabs;
+    }
+  } catch (e) {
+    console.warn('corsproxy proxy for htmlview failed:', e);
+  }
+
+  // 4. pubhtml via allorigins proxy
+  try {
+    const pubUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/pubhtml`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(pubUrl)}`;
+    const res = await fetch(proxyUrl);
+    if (res.ok) {
+      const html = await res.text();
+      const tabs = parseHtmlForTabs(html);
+      if (tabs.length > 0) return tabs;
+    }
+  } catch (e) {
+    console.warn('allorigins proxy for pubhtml failed:', e);
+  }
+
+  return [];
+}
+
 

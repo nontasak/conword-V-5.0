@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Search, Database, Loader2, Calendar, Clock as ClockIcon, Hash, LogIn, User, MapPin, ChevronDown, Check, RefreshCw } from 'lucide-react';
-import { SheetTab, fetchSpreadsheetMetadata, fetchSheetData, fetchPublicGvizValues } from '../lib/googleSheets';
+import { SheetTab, fetchSpreadsheetMetadata, fetchSheetData, fetchPublicGvizValues, fetchPublicTabsFallback } from '../lib/googleSheets';
 import { motion } from 'motion/react';
 import { getAccessToken, googleSignIn } from '../lib/firebase';
 
@@ -69,6 +69,18 @@ export const MeetingHeaderModal: React.FC<MeetingHeaderModalProps> = ({ isOpen, 
           }
         } catch (e) {
           console.warn('Direct Google Sheets API metadata call failed:', e);
+        }
+      }
+
+      // 3. Fallback: Client-side public HTML parsing fallback
+      if (sheets.length === 0) {
+        try {
+          const publicTabs = await fetchPublicTabsFallback();
+          if (publicTabs && publicTabs.length > 0) {
+            sheets = publicTabs;
+          }
+        } catch (e) {
+          console.warn('Public tabs fallback failed:', e);
         }
       }
 
