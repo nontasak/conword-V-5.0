@@ -1826,6 +1826,20 @@ function App() {
         transition: 'all 0.2s ease-in-out'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '6px' : '12px' }}>
+          {/* App Brand Logo */}
+          <div className="flex items-center gap-1.5 select-none mr-1" title="Conword V.5">
+            <img 
+              src="/favicon.svg" 
+              alt="Conword Logo" 
+              className={`transition-all duration-200 object-contain drop-shadow-xs ${isMenuBarCollapsed ? 'w-5 h-5' : 'w-7 h-7'}`}
+            />
+            {!isMenuBarCollapsed && (
+              <span className="font-bold text-gray-700 text-sm tracking-tight hidden md:inline-block">
+                Conword
+              </span>
+            )}
+          </div>
+
           {/* Save Status Indicator */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', marginRight: isMenuBarCollapsed ? '6px' : '14px' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title={hasUnsavedChanges ? "Unsaved changes" : "Saved"}>
@@ -2259,7 +2273,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.8 26/08/69 14.02</span>
+        <span>เวอร์ชั่น 5.9 26/08/69 14.20</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
