@@ -1814,43 +1814,52 @@ function App() {
       )}
 
       {/* Top Menu Bar */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        padding: isMenuBarCollapsed ? '4px 12px' : '8px 16px', 
-        minHeight: isMenuBarCollapsed ? '36px' : '46px',
-        backgroundColor: '#f3f4f6', 
-        borderBottom: '1px solid #e5e7eb',
-        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-        transition: 'all 0.2s ease-in-out'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '6px' : '12px' }}>
+      <div 
+        className="custom-scrollbar"
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          padding: isMenuBarCollapsed ? '3px 8px' : '6px 12px', 
+          minHeight: isMenuBarCollapsed ? '34px' : '44px',
+          backgroundColor: '#f3f4f6', 
+          borderBottom: '1px solid #e5e7eb',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          transition: 'all 0.2s ease-in-out',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          whiteSpace: 'nowrap'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', flexShrink: 0 }}>
           {/* App Brand Logo */}
-          <div className="flex items-center gap-1.5 select-none mr-1" title="Conword V.5">
+          <div 
+            className="flex items-center select-none shrink-0" 
+            style={{ 
+              marginRight: isMenuBarCollapsed ? '4px' : '8px',
+              paddingRight: '0px'
+            }} 
+            title="Conword V.5"
+          >
             <img 
-              src="/favicon.svg" 
+              src="/logo.png" 
               alt="Conword Logo" 
-              className={`transition-all duration-200 object-contain drop-shadow-xs ${isMenuBarCollapsed ? 'w-5 h-5' : 'w-7 h-7'}`}
+              referrerPolicy="no-referrer"
+              className={`transition-all duration-200 object-contain drop-shadow-xs shrink-0 ${isMenuBarCollapsed ? 'w-5 h-5 min-w-[20px]' : 'w-6 h-6 sm:w-7 sm:h-7 min-w-[24px]'}`}
             />
-            {!isMenuBarCollapsed && (
-              <span className="font-bold text-gray-700 text-sm tracking-tight hidden md:inline-block">
-                Conword
-              </span>
-            )}
           </div>
 
           {/* Save Status Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', marginRight: isMenuBarCollapsed ? '6px' : '14px' }}>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title={hasUnsavedChanges ? "Unsaved changes" : "Saved"}>
-              <Save size={isMenuBarCollapsed ? 16 : 20} color="#4b5563" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '3px' : '6px', marginRight: isMenuBarCollapsed ? '4px' : '8px' }} className="shrink-0">
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title={hasUnsavedChanges ? "Unsaved changes" : "Saved"} className="shrink-0">
+              <Save size={isMenuBarCollapsed ? 15 : 18} color="#4b5563" className="shrink-0" />
               {hasUnsavedChanges && (
                 <div style={{
                   position: 'absolute',
                   top: -2,
                   right: -2,
-                  width: isMenuBarCollapsed ? '6px' : '8px',
-                  height: isMenuBarCollapsed ? '6px' : '8px',
+                  width: isMenuBarCollapsed ? '6px' : '7px',
+                  height: isMenuBarCollapsed ? '6px' : '7px',
                   backgroundColor: '#f97316', // Orange dot
                   borderRadius: '50%',
                   border: '1px solid #f3f4f6'
@@ -1858,31 +1867,31 @@ function App() {
               )}
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', borderLeft: '1px solid #d1d5db', paddingLeft: isMenuBarCollapsed ? '4px' : '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', borderLeft: '1px solid #d1d5db', paddingLeft: isMenuBarCollapsed ? '4px' : '6px' }} className="shrink-0">
               <button 
                 onClick={handleUndo} 
                 disabled={!canUndo}
-                className={`p-1 rounded flex items-center justify-center transition-all duration-200 border ${canUndo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
+                className={`p-1 rounded flex items-center justify-center transition-all duration-200 border shrink-0 ${canUndo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
                 title="เลิกทำ (Undo)"
               >
-                <Undo2 size={isMenuBarCollapsed ? 15 : 18} color={canUndo ? "#1f2937" : "#9ca3af"} />
+                <Undo2 size={isMenuBarCollapsed ? 14 : 16} color={canUndo ? "#1f2937" : "#9ca3af"} />
               </button>
               <button 
                 onClick={handleRedo} 
                 disabled={!canRedo}
-                className={`p-1 rounded flex items-center justify-center transition-all duration-200 border ${canRedo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
+                className={`p-1 rounded flex items-center justify-center transition-all duration-200 border shrink-0 ${canRedo ? 'hover:bg-gray-100 hover:border-gray-300 border-transparent cursor-pointer' : 'opacity-30 border-transparent cursor-default'}`}
                 title="ทำซ้ำ (Redo)"
               >
-                <Redo2 size={isMenuBarCollapsed ? 15 : 18} color={canRedo ? "#1f2937" : "#9ca3af"} />
+                <Redo2 size={isMenuBarCollapsed ? 14 : 16} color={canRedo ? "#1f2937" : "#9ca3af"} />
               </button>
               <button 
                 onClick={() => setIsHistoryModalOpen(true)} 
-                className="menu-btn" 
-                style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px', padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+                className="menu-btn shrink-0" 
+                style={{ marginLeft: isMenuBarCollapsed ? '2px' : '3px' }}
                 title="ประวัติการบันทึกข้อความย้อนหลัง (ป้องกันข้อความหายในเครื่อง)"
               >
-                <History size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
-                {!isMenuBarCollapsed && 'ประวัติ'}
+                <History size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
+                {!isMenuBarCollapsed && <span>ประวัติ</span>}
               </button>
             </div>
           </div>
@@ -1890,39 +1899,38 @@ function App() {
           {/* Menu Buttons */}
           <button 
             onClick={handleClear} 
-            className="menu-btn"
+            className="menu-btn shrink-0"
             style={{ 
-              color: isConfirmingClear ? '#ef4444' : 'inherit',
-              padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px'
+              color: isConfirmingClear ? '#ef4444' : 'inherit'
             }}
             title={isConfirmingClear ? 'คลิกอีกครั้งเพื่อยืนยันล้างข้อความ!' : 'ล้างข้อความทั้งหมด (มีระบบสำรองข้อมูลฉุกเฉิน)'}
           >
-            <Eraser size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
-            {!isMenuBarCollapsed && (isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ')}
+            <Eraser size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
+            {!isMenuBarCollapsed && <span>{isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ'}</span>}
           </button>
           {/* Copy Split Button (Horizontal) */}
-          <div className="relative inline-flex items-center" ref={copyMenuRef}>
+          <div className="relative inline-flex items-center shrink-0" ref={copyMenuRef}>
             <div className={`inline-flex items-center rounded border transition-all ${isCopyMenuOpen ? 'bg-gray-200 border-gray-400' : 'bg-transparent border-transparent hover:bg-gray-100 hover:border-gray-300'}`}>
               {/* Action 1: Click Icon to Copy All Text Immediately */}
               <button 
                 onClick={handleCopy} 
-                className={`${isMenuBarCollapsed ? 'px-2 py-1' : 'px-3.5 py-1.5'} hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer ${isMenuBarCollapsed ? 'min-w-[28px]' : 'min-w-[38px]'}`}
+                className={`${isMenuBarCollapsed ? 'px-1.5 py-1' : 'px-2 md:px-2.5 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer shrink-0`}
                 title="คัดลอกข้อความทั้งหมด (คลิกไอคอนเพื่อคัดลอกทันที)"
               >
-                <Copy size={isMenuBarCollapsed ? 14 : 16} />
+                <Copy size={isMenuBarCollapsed ? 13 : 15} className="shrink-0" />
               </button>
 
               {/* Subtle Vertical Divider */}
-              <div className="w-[1px] h-3.5 bg-gray-300" />
+              <div className="w-[1px] h-3.5 bg-gray-300 shrink-0" />
 
               {/* Action 2: Click Label & Arrow to Open Copy Options */}
               <button 
                 onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)} 
-                className={`${isMenuBarCollapsed ? 'px-1.5 py-1' : 'px-2 py-1.5'} hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-sm font-sans ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
+                className={`${isMenuBarCollapsed ? 'px-1 py-1' : 'px-1.5 md:px-2 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-xs md:text-sm font-sans whitespace-nowrap shrink-0 ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
                 title="ตัวเลือกการคัดลอก (คลิกเพื่อเลือกคัดลอกข้อความหรือคลิปบอร์ด)"
               >
                 {!isMenuBarCollapsed && <span>คัดลอก</span>}
-                <ChevronDown size={isMenuBarCollapsed ? 11 : 13} className={`transition-transform duration-200 ${isCopyMenuOpen ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} />
+                <ChevronDown size={isMenuBarCollapsed ? 10 : 12} className={`transition-transform duration-200 shrink-0 ${isCopyMenuOpen ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} />
               </button>
             </div>
 
@@ -1967,46 +1975,43 @@ function App() {
           </div>
           <button 
             onClick={() => setIsHeaderModalOpen(true)} 
-            className="menu-btn" 
-            style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+            className="menu-btn shrink-0" 
             title="พิมพ์ส่วนหัวจากการประชุม"
           >
-            <Layout size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
-            {!isMenuBarCollapsed && 'พิมพ์ส่วนหัว'}
+            <Layout size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
+            {!isMenuBarCollapsed && <span>พิมพ์ส่วนหัว</span>}
           </button>
           <button 
             onClick={() => setIsSpeechTranscriberOpen(true)} 
-            className="menu-btn" 
-            style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+            className="menu-btn shrink-0" 
             title="พิมพ์ด้วยเสียง (Speech to Text)"
           >
-            <Mic size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
-            {!isMenuBarCollapsed && 'พิมพ์ด้วยเสียง'}
+            <Mic size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
+            {!isMenuBarCollapsed && <span>พิมพ์ด้วยเสียง</span>}
           </button>
 
           {/* Font Size Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: isMenuBarCollapsed ? '4px' : '12px', borderLeft: '1px solid #e5e7eb', paddingLeft: isMenuBarCollapsed ? '6px' : '12px' }}>
-            {!isMenuBarCollapsed && <Type size={16} color="#6b7280" style={{ marginRight: '8px' }} />}
-            <button onClick={handleDecreaseFontSize} className="menu-btn" style={{ padding: isMenuBarCollapsed ? '2px 5px' : '4px 8px' }} title="ลดขนาดตัวอักษร">
-              <Minus size={isMenuBarCollapsed ? 12 : 14} />
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: isMenuBarCollapsed ? '2px' : '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: isMenuBarCollapsed ? '4px' : '6px' }} className="shrink-0">
+            {!isMenuBarCollapsed && <Type size={14} color="#6b7280" style={{ marginRight: '4px' }} className="shrink-0 hidden sm:inline-block" />}
+            <button onClick={handleDecreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px' }} title="ลดขนาดตัวอักษร">
+              <Minus size={isMenuBarCollapsed ? 11 : 13} />
             </button>
-            <span style={{ margin: isMenuBarCollapsed ? '0 4px' : '0 8px', fontSize: isMenuBarCollapsed ? '12px' : '14px', color: '#374151', minWidth: '18px', textAlign: 'center' }}>{fontSize}</span>
-            <button onClick={handleIncreaseFontSize} className="menu-btn" style={{ padding: isMenuBarCollapsed ? '2px 5px' : '4px 8px' }} title="เพิ่มขนาดตัวอักษร">
-              <Plus size={isMenuBarCollapsed ? 12 : 14} />
+            <span style={{ margin: isMenuBarCollapsed ? '0 2px' : '0 4px', fontSize: isMenuBarCollapsed ? '11px' : '13px', color: '#374151', minWidth: '16px', textAlign: 'center' }} className="shrink-0">{fontSize}</span>
+            <button onClick={handleIncreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px' }} title="เพิ่มขนาดตัวอักษร">
+              <Plus size={isMenuBarCollapsed ? 11 : 13} />
             </button>
           </div>
 
           {/* Settings Dropdown */}
-          <div className="relative" ref={settingsMenuRef} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '6px' }}>
+          <div className="relative shrink-0" ref={settingsMenuRef} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px' }}>
             <button 
               onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)} 
-              className={`menu-btn ${isSettingsMenuOpen ? 'bg-blue-50 text-blue-600' : ''}`}
-              style={{ padding: isMenuBarCollapsed ? '3px 6px' : '6px 12px' }}
+              className={`menu-btn shrink-0 ${isSettingsMenuOpen ? 'bg-blue-50 text-blue-600' : ''}`}
               title="ตั้งค่า (คำย่อ/คีย์ลัด)"
             >
-              <Settings size={isMenuBarCollapsed ? 15 : 16} style={{ marginRight: isMenuBarCollapsed ? '0' : '6px' }} />
-              {!isMenuBarCollapsed && 'ตั้งค่า'}
-              <ChevronDown size={isMenuBarCollapsed ? 11 : 14} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px' }} />
+              <Settings size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
+              {!isMenuBarCollapsed && <span>ตั้งค่า</span>}
+              <ChevronDown size={isMenuBarCollapsed ? 10 : 12} style={{ marginLeft: isMenuBarCollapsed ? '1px' : '3px' }} className="shrink-0" />
             </button>
             
             {isSettingsMenuOpen && (
@@ -2037,67 +2042,66 @@ function App() {
         </div>
 
         {/* Right Section: Tool Toggles + Clock + Menu Bar Fold/Expand Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '6px' : '10px', fontSize: isMenuBarCollapsed ? '12px' : '14px', fontWeight: '500', color: '#374151' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', flexShrink: 0 }} className="text-xs md:text-sm font-medium text-gray-700">
           {/* Left Clipboard Toggle */}
           <button 
-            className="menu-btn" 
+            className="menu-btn shrink-0" 
             onClick={() => setIsLeftClipboardOpen(!isLeftClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดซ้าย"
             style={{ 
-              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
               color: isLeftClipboardOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isLeftClipboardOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
             }}
           >
-            <PanelLeft size={isMenuBarCollapsed ? 15 : 18} />
+            <PanelLeft size={isMenuBarCollapsed ? 14 : 16} className="shrink-0" />
           </button>
 
           {/* Right Clipboard Toggle */}
           <button 
-            className="menu-btn" 
+            className="menu-btn shrink-0" 
             onClick={() => setIsClipboardOpen(!isClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดขวา"
             style={{ 
-              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
               color: isClipboardOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isClipboardOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
             }}
           >
-            <PanelRight size={isMenuBarCollapsed ? 15 : 18} />
+            <PanelRight size={isMenuBarCollapsed ? 14 : 16} className="shrink-0" />
           </button>
 
           {/* Search Toggle (Google) */}
           <button 
-            className="menu-btn" 
+            className="menu-btn shrink-0" 
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             title="เปิด/ปิด ผู้ช่วยค้นหา Google"
             style={{ 
-              padding: isMenuBarCollapsed ? '3px 6px' : '4px 8px', 
+              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
               color: isSearchOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isSearchOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
             }}
           >
-            <Search size={isMenuBarCollapsed ? 15 : 18} />
+            <Search size={isMenuBarCollapsed ? 14 : 16} className="shrink-0" />
           </button>
           
           {/* Clock */}
           <div style={{ 
-            marginLeft: isMenuBarCollapsed ? '4px' : '6px', 
+            marginLeft: isMenuBarCollapsed ? '2px' : '4px', 
             borderLeft: '1px solid #e5e7eb', 
-            paddingLeft: isMenuBarCollapsed ? '8px' : '10px',
-            fontSize: isMenuBarCollapsed ? '12px' : '14px'
-          }}>
+            paddingLeft: isMenuBarCollapsed ? '6px' : '8px'
+          }} className="shrink-0">
             <Clock />
           </div>
 
           {/* Menu Bar Collapse / Expand Toggle Button (หลังนาฬิกา) */}
-          <div style={{ marginLeft: '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: '8px' }}>
+          <div style={{ marginLeft: '2px', borderLeft: '1px solid #e5e7eb', paddingLeft: '6px' }} className="shrink-0">
             <button
               onClick={toggleMenuBar}
-              className={`flex items-center justify-center cursor-pointer transition-all duration-200 p-1 rounded ${
+              className={`flex items-center justify-center cursor-pointer transition-all duration-200 p-1 rounded shrink-0 ${
                 isMenuBarCollapsed 
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs border border-blue-600'
                   : 'bg-gray-200/90 hover:bg-gray-300 text-gray-700 hover:text-gray-900 border border-gray-300'
@@ -2105,9 +2109,9 @@ function App() {
               title={isMenuBarCollapsed ? "กางแถบเมนูบาร์ (ขยาย)" : "พับแถบเมนูบาร์ (ย่อเหลือเฉพาะไอคอน)"}
             >
               {isMenuBarCollapsed ? (
-                <ChevronDown size={isMenuBarCollapsed ? 15 : 16} className="text-white" />
+                <ChevronDown size={isMenuBarCollapsed ? 14 : 15} className="text-white shrink-0" />
               ) : (
-                <ChevronUp size={isMenuBarCollapsed ? 15 : 16} className="text-gray-600" />
+                <ChevronUp size={isMenuBarCollapsed ? 14 : 15} className="text-gray-600 shrink-0" />
               )}
             </button>
           </div>
@@ -2273,7 +2277,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.9 26/08/69 14.20</span>
+        <span>เวอร์ชั่น 5.14 26/08/69 15.10</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
