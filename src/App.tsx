@@ -1815,8 +1815,9 @@ function App() {
 
       {/* Top Menu Bar */}
       <div 
-        className="custom-scrollbar"
         style={{ 
+          position: 'relative',
+          zIndex: 40,
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between', 
@@ -1826,8 +1827,7 @@ function App() {
           borderBottom: '1px solid #e5e7eb',
           boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
           transition: 'all 0.2s ease-in-out',
-          overflowX: 'auto',
-          overflowY: 'hidden',
+          overflow: 'visible',
           whiteSpace: 'nowrap'
         }}
       >
@@ -2260,7 +2260,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.17 26/08/69 15.50</span>
+        <span>เวอร์ชั่น 5.18 26/08/69 16.05</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
