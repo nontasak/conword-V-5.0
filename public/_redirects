@@ -1,3 +1,0 @@
-# SPA Fallback for static hosts (Cloudflare Pages, Netlify)
-/api/*    /api/:splat    200
-/*        /index.html     200
