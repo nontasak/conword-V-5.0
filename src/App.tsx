@@ -2260,7 +2260,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.16 26/08/69 15.35</span>
+        <span>เวอร์ชั่น 5.17 26/08/69 15.50</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
@@ -2387,37 +2387,6 @@ function App() {
             onClick={() => { handleContextPaste(); setContextMenu(prev => ({...prev, show: false})); }}
           >
             <ClipboardPaste size={16} /> วาง
-          </button>
-
-          <div style={{ height: '1px', backgroundColor: '#e5e7eb', margin: '4px 0' }} />
-
-          <button 
-            className="context-menu-item"
-            onClick={() => { 
-              const name = contextMenu.selectedText.trim();
-              if (name && !senatorList.includes(name)) {
-                setSenatorList(prev => [...prev, name]);
-                showAlert(`เพิ่ม "${name}" เข้าสมาชิกวุฒิสภาแล้ว`);
-              }
-              setContextMenu(prev => ({...prev, show: false})); 
-            }}
-            disabled={!contextMenu.selectedText}
-          >
-            <Plus size={16} /> เพิ่มเข้าสมาชิกวุฒิสภา
-          </button>
-          <button 
-            className="context-menu-item"
-            onClick={() => { 
-              const name = contextMenu.selectedText.trim();
-              if (name && !speakerList.includes(name)) {
-                setSpeakerList(prev => [...prev, name]);
-                showAlert(`เพิ่ม "${name}" เข้าผู้อภิปรายแล้ว`);
-              }
-              setContextMenu(prev => ({...prev, show: false})); 
-            }}
-            disabled={!contextMenu.selectedText}
-          >
-            <Plus size={16} /> เพิ่มเข้าผู้อภิปราย
           </button>
         </div>
       )}
