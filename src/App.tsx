@@ -23,6 +23,7 @@ import { CommitteeReportGeneratorModal } from './components/CommitteeReportGener
 import { MeetingHeaderModal } from './components/MeetingHeaderModal';
 import { HistoryModal } from './components/HistoryModal';
 import { EmergencyRecoveryModal, EmergencyBackupData } from './components/EmergencyRecoveryModal';
+import { ClipboardSettingsModal } from './components/ClipboardSettingsModal';
 import { 
   requestPersistentStorage, 
   getItem, 
@@ -35,7 +36,7 @@ import {
   setUserClearedState
 } from './utils/persistentStorage';
 import { initAuth } from './lib/firebase';
-import { ChevronUp, ChevronDown, Save, FileText, Check, AlertCircle, Copy, Eraser, Minus, Plus, Type, Settings, Keyboard, PanelLeft, PanelRight, Scissors, ClipboardPaste, Search, ArrowDownToLine, Crosshair, Users, Image as ImageIcon, Wand2, ChevronRight, BrainCircuit, Undo2, Redo2, Layout, History } from 'lucide-react';
+import { ChevronUp, ChevronDown, Save, FileText, Check, AlertCircle, Copy, Eraser, Minus, Plus, Type, Settings, Keyboard, PanelLeft, PanelRight, Scissors, ClipboardPaste, Search, ArrowDownToLine, Crosshair, Users, Image as ImageIcon, Wand2, ChevronRight, BrainCircuit, Undo2, Redo2, Layout, History, SlidersHorizontal } from 'lucide-react';
 
 // Clock Component
 const Clock = () => {
@@ -78,6 +79,32 @@ function App() {
   const [isLeftClipboardOpen, setIsLeftClipboardOpen] = useState(() => window.innerWidth >= 1024);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [clipboardHeight, setClipboardHeight] = useState(0);
+
+  // Clipboard Customization States (Width & Item Font Size)
+  const [clipboardWidth, setClipboardWidth] = useState<number>(() => {
+    const saved = localStorage.getItem('conword_clipboard_width');
+    return saved ? Number(saved) : 260;
+  });
+  const [clipboardFontSize, setClipboardFontSize] = useState<number>(() => {
+    const saved = localStorage.getItem('conword_clipboard_font_size');
+    return saved ? Number(saved) : 14;
+  });
+  const [isClipboardSettingsOpen, setIsClipboardSettingsOpen] = useState(false);
+
+  const handleClipboardWidthChange = (newWidth: number) => {
+    setClipboardWidth(newWidth);
+    localStorage.setItem('conword_clipboard_width', String(newWidth));
+  };
+
+  const handleClipboardFontSizeChange = (newSize: number) => {
+    setClipboardFontSize(newSize);
+    localStorage.setItem('conword_clipboard_font_size', String(newSize));
+  };
+
+  const handleResetClipboardSettings = () => {
+    handleClipboardWidthChange(260);
+    handleClipboardFontSizeChange(14);
+  };
 
   // Cursor preservation logic
   const pendingCursorRestore = useRef<{ start: number, end: number, scroll: number } | null>(null);
@@ -1817,7 +1844,7 @@ function App() {
       <div 
         style={{ 
           position: 'relative',
-          zIndex: 40,
+          zIndex: 50,
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between', 
@@ -1827,11 +1854,9 @@ function App() {
           borderBottom: '1px solid #e5e7eb',
           boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
           transition: 'all 0.2s ease-in-out',
-          overflowX: 'auto',
-          overflowY: 'visible',
-          scrollbarWidth: 'none',
+          overflow: 'visible',
           whiteSpace: 'nowrap',
-          maxWidth: '100vw'
+          width: '100%'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '3px' : '6px', flexShrink: 0 }}>
@@ -1922,7 +1947,7 @@ function App() {
 
             {/* Copy Options Dropdown */}
             {isCopyMenuOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1.5 min-w-[250px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[100] py-1.5 min-w-[250px]">
                 <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">
                   ตัวเลือกการคัดลอก (Copy Options)
                 </div>
@@ -2001,7 +2026,7 @@ function App() {
             </button>
             
             {isSettingsMenuOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1 min-w-[200px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-[100] py-1 min-w-[200px]">
                 <button
                   onClick={() => {
                     setIsSnippetManagerOpen(true);
@@ -2021,6 +2046,16 @@ function App() {
                 >
                   <Keyboard size={14} />
                   ตั้งค่าคีย์ลัด
+                </button>
+                <button
+                  onClick={() => {
+                    setIsClipboardSettingsOpen(true);
+                    setIsSettingsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 border-t border-gray-100"
+                >
+                  <SlidersHorizontal size={14} />
+                  ตั้งค่าคลิปบอร์ด
                 </button>
               </div>
             )}
@@ -2113,7 +2148,10 @@ function App() {
           style={{ 
             display: isLeftClipboardOpen ? 'flex' : 'none',
             marginRight: '6px',
-            height: '100%'
+            height: '100%',
+            width: `${clipboardWidth}px`,
+            minWidth: `${clipboardWidth}px`,
+            maxWidth: `${clipboardWidth}px`,
           }}
         >
            <Clipboard 
@@ -2121,6 +2159,7 @@ function App() {
              height={clipboardHeight} 
              storageKey="clipListLeft"
              title="Clipboard (L)"
+             itemFontSize={clipboardFontSize}
            />
         </div>
 
@@ -2236,7 +2275,10 @@ function App() {
           style={{ 
             display: isClipboardOpen ? 'flex' : 'none',
             marginLeft: '6px',
-            height: '100%'
+            height: '100%',
+            width: `${clipboardWidth}px`,
+            minWidth: `${clipboardWidth}px`,
+            maxWidth: `${clipboardWidth}px`,
           }}
         >
            <Clipboard 
@@ -2244,6 +2286,7 @@ function App() {
              height={clipboardHeight} 
              storageKey="clipList"
              title="Clipboard (R)"
+             itemFontSize={clipboardFontSize}
            />
         </div>
 
@@ -2263,7 +2306,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span>เวอร์ชั่น 5.19 27/08/69 19.12</span>
+        <span>เวอร์ชั่น 5.24 27/08/69 20.25</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
@@ -2482,6 +2525,17 @@ function App() {
           setIsEmergencyRecoveryOpen(false);
           showAlert("กู้คืนข้อความลงหน้าจอเรียบร้อยแล้ว!");
         }}
+      />
+
+      {/* Clipboard Settings Modal */}
+      <ClipboardSettingsModal
+        isOpen={isClipboardSettingsOpen}
+        onClose={() => setIsClipboardSettingsOpen(false)}
+        width={clipboardWidth}
+        onWidthChange={handleClipboardWidthChange}
+        fontSize={clipboardFontSize}
+        onFontSizeChange={handleClipboardFontSizeChange}
+        onReset={handleResetClipboardSettings}
       />
     </div>
   );

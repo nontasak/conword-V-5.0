@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ReactSortable } from 'react-sortablejs';
-import { Plus, Trash2, Edit, GripHorizontal, Search, X } from 'lucide-react';
+import { Plus, Trash2, Edit, GripHorizontal, Search, X, MoreHorizontal, Check } from 'lucide-react';
 
 interface ClipboardItem {
   id: string;
@@ -13,11 +13,12 @@ interface ClipboardProps {
   storageKey?: string;
   title?: string;
   headerExtra?: React.ReactNode;
+  itemFontSize?: number;
 }
 
-export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKey = 'clipList', title = 'Clipboard', headerExtra }) => {
+export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKey = 'clipList', title = 'Clipboard', headerExtra, itemFontSize }) => {
   const [items, setItems] = useState<ClipboardItem[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<ClipboardItem | null>(null);
   const [editText, setEditText] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newItemText, setNewItemText] = useState('');
@@ -28,6 +29,19 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
 
   const [displayTitle, setDisplayTitle] = useState(title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Close see-more dropdown menu on click outside
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.clipboard-seemore-container')) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, []);
 
   // Load from local storage on mount
   useEffect(() => {
@@ -35,7 +49,6 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
     if (savedItems) {
       try {
         const parsed = JSON.parse(savedItems);
-        // Handle legacy array of strings or new object structure
         const formattedItems = parsed.map((item: any, index: number) => {
            if (typeof item === 'string') {
              return { id: `item-${Date.now()}-${index}`, text: item };
@@ -90,36 +103,22 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
       }
     };
 
-    window.addEventListener(`clipboard-update-${storageKey}`, handleExternalUpdate);
-    return () => window.removeEventListener(`clipboard-update-${storageKey}`, handleExternalUpdate);
+    window.addEventListener('clipboard-updated', handleExternalUpdate);
+    return () => {
+      window.removeEventListener('clipboard-updated', handleExternalUpdate);
+    };
   }, [storageKey]);
 
   const handleAddItemClick = () => {
     setIsAdding(true);
-    setNewItemText('');
   };
 
   const saveNewItem = () => {
-    if (newItemText && newItemText.trim() !== '') {
-      const newItems: ClipboardItem[] = [];
-      
-      const lines = newItemText.split(/\r?\n|\r/);
-      lines.forEach(line => {
-        const subItems = line.split(/(?<=:)/);
-        subItems.forEach(subItem => {
-          if (subItem.trim() !== '') {
-            newItems.push({
-              id: `item-${Date.now()}-${Math.random()}`,
-              text: subItem
-            });
-          }
-        });
-      });
-
-      setItems(prev => [...prev, ...newItems]);
+    if (newItemText.trim()) {
+      setItems(prev => [...prev, { id: `item-${Date.now()}`, text: newItemText }]);
+      setNewItemText('');
+      setIsAdding(false);
     }
-    setIsAdding(false);
-    setNewItemText('');
   };
 
   const cancelAddItem = () => {
@@ -142,16 +141,19 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
-  const startEditing = (item: ClipboardItem) => {
-    setEditingId(item.id);
+  const openEditModal = (item: ClipboardItem) => {
+    setEditingItem(item);
     setEditText(item.text);
+    setOpenMenuId(null);
   };
 
-  const saveEdit = (id: string) => {
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, text: editText } : item
-    ));
-    setEditingId(null);
+  const saveEdit = () => {
+    if (editingItem && editText.trim()) {
+      setItems(prev => prev.map(item => 
+        item.id === editingItem.id ? { ...item, text: editText.trim() } : item
+      ));
+    }
+    setEditingItem(null);
     setEditText('');
   };
 
@@ -166,38 +168,63 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
       </span>
 
       <div className="clipboard-item-box">
+        {/* Grip Handle */}
         <button className="drag-handle" style={{ cursor: searchTerm ? 'default' : 'move', opacity: searchTerm ? 0.3 : 1 }}>
           <GripHorizontal size={14} />
         </button>
         
-        {editingId === item.id ? (
-          <textarea 
-            value={editText} 
-            onChange={(e) => setEditText(e.target.value)}
-            onBlur={() => saveEdit(item.id)}
-            autoFocus
-            style={{ width: '100%', height: '50px' }}
-          />
-        ) : (
-          <span 
-            className="item-text"
-            onClick={() => onPaste(item.text)} 
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            {item.text}
-          </span>
-        )}
+        {/* Item Text with Ellipsis */}
+        <span 
+          className="item-text"
+          style={{ fontSize: itemFontSize ? `${itemFontSize}px` : undefined }}
+          onClick={() => onPaste(item.text)} 
+          onMouseDown={(e) => e.preventDefault()}
+          title={item.text}
+        >
+          {item.text}
+        </span>
 
-        {editingId !== item.id && (
-          <>
-            <button className="edit" onClick={() => startEditing(item)}>
-              <Edit size={14} />
-            </button>
-            <button className="delete" onClick={() => deleteItem(item.id)}>
-              <Trash2 size={14} />
-            </button>
-          </>
-        )}
+        {/* 3-dots horizontal See More Button at top-right */}
+        <div className="clipboard-seemore-container">
+          <button 
+            type="button"
+            className="seemore-btn" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenMenuId(openMenuId === item.id ? null : item.id);
+            }} 
+            title="ตัวเลือกเพิ่มเติม"
+          >
+            <MoreHorizontal size={13} />
+          </button>
+
+          {openMenuId === item.id && (
+            <div 
+              className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl py-1 z-[90] min-w-[100px] text-xs animate-in fade-in zoom-in-95 duration-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => openEditModal(item)}
+                className="w-full text-left px-3 py-1.5 hover:bg-blue-50 text-gray-700 hover:text-blue-600 flex items-center gap-1.5 transition-colors font-medium"
+              >
+                <Edit size={12} className="text-blue-500" />
+                แก้ไข
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenMenuId(null);
+                  deleteItem(item.id);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-gray-700 hover:text-red-600 flex items-center gap-1.5 transition-colors font-medium border-t border-gray-100"
+              >
+                <Trash2 size={12} className="text-red-500" />
+                ลบ
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
@@ -332,7 +359,81 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
           ))}
         </ReactSortable>
       )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <div 
+          className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(1px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingItem(null);
+              setEditText('');
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150 select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Edit size={16} className="text-blue-600" />
+                <h3 className="font-bold text-gray-800 text-sm">แก้ไขข้อความคลิปบอร์ด</h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setEditingItem(null);
+                  setEditText('');
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
+                title="ปิด"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-3.5 space-y-2">
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                placeholder="ระบุข้อความ..."
+                rows={2}
+                className="w-full min-h-[52px] max-h-[140px] p-2.5 text-base sm:text-lg font-medium text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y leading-snug"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    saveEdit();
+                  }
+                }}
+              />
+              <p className="text-[11px] text-gray-400 text-right">กด Ctrl + Enter เพื่อบันทึกด่วน</p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-2 bg-gray-50 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingItem(null);
+                  setEditText('');
+                }}
+                className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition-colors font-medium"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                className="flex items-center gap-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
+              >
+                <Check size={14} />
+                บันทึก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
-
