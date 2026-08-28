@@ -115,7 +115,15 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
 
   const saveNewItem = () => {
     if (newItemText.trim()) {
-      setItems(prev => [...prev, { id: `item-${Date.now()}`, text: newItemText }]);
+      // Split by newlines and add each non-empty line as a separate item
+      const lines = newItemText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      if (lines.length > 0) {
+        const newItems: ClipboardItem[] = lines.map((line, idx) => ({
+          id: `item-${Date.now()}-${idx}`,
+          text: line
+        }));
+        setItems(prev => [...prev, ...newItems]);
+      }
       setNewItemText('');
       setIsAdding(false);
     }
@@ -318,18 +326,75 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
         </div>
       </div>
 
+      {/* Add Item Modal */}
       {isAdding && (
-        <div style={{ padding: '10px', borderBottom: '1px solid #ccc' }}>
-          <textarea
-            value={newItemText}
-            onChange={(e) => setNewItemText(e.target.value)}
-            placeholder="ใส่ข้อความที่นี่..."
-            style={{ width: '100%', height: '60px', marginBottom: '5px', borderRadius: '5px', border: '1px solid #ccc', padding: '5px' }}
-            autoFocus
-          />
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button className="action-btn" onClick={saveNewItem} style={{ fontSize: '12px', margin: 0 }}>บันทึก</button>
-            <button className="action-btn" onClick={cancelAddItem} style={{ fontSize: '12px', backgroundColor: '#ccc', margin: 0, color: '#333' }}>ยกเลิก</button>
+        <div 
+          className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(1px)' }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              cancelAddItem();
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200 shrink-0">
+              <div className="flex items-center gap-2 min-w-0 pr-2">
+                <Plus size={16} className="text-blue-600 shrink-0" />
+                <h3 className="font-bold text-gray-800 text-sm truncate">
+                  เพิ่มข้อความใน {displayTitle}
+                </h3>
+              </div>
+              <button 
+                onClick={cancelAddItem}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors shrink-0"
+                title="ปิด"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-2 flex-1 flex flex-col min-h-0">
+              <textarea
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                placeholder="ใส่ข้อความที่นี่... (ขึ้นบรรทัดใหม่เพื่อแยกหลายรายการ)"
+                className="w-full h-[400px] sm:h-[480px] max-h-[65vh] p-3.5 text-base font-medium text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y leading-relaxed"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    saveNewItem();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1 shrink-0">
+                <span>แยก 1 รายการต่อ 1 บรรทัด</span>
+                <span>กด Ctrl + Enter เพื่อบันทึกด่วน</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-2.5 bg-gray-50 border-t border-gray-200 shrink-0">
+              <button
+                type="button"
+                onClick={cancelAddItem}
+                className="px-3.5 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-md transition-colors font-medium"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={saveNewItem}
+                disabled={!newItemText.trim()}
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-xs font-semibold shadow-xs transition-colors"
+              >
+                <Check size={14} />
+                บันทึก
+              </button>
+            </div>
           </div>
         </div>
       )}
