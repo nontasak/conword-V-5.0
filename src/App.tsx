@@ -73,9 +73,9 @@ import { SpellCheck, Mic, MessageSquare } from 'lucide-react';
 
 function App() {
   const [text, setText] = useState('');
-  // Lazy initialization to prevent flash on mobile
-  const [isClipboardOpen, setIsClipboardOpen] = useState(() => window.innerWidth > 600);
-  const [isLeftClipboardOpen, setIsLeftClipboardOpen] = useState(() => window.innerWidth > 600);
+  // Responsive initialization for desktop vs tablet/mobile
+  const [isClipboardOpen, setIsClipboardOpen] = useState(() => window.innerWidth > 500);
+  const [isLeftClipboardOpen, setIsLeftClipboardOpen] = useState(() => window.innerWidth >= 1024);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [clipboardHeight, setClipboardHeight] = useState(0);
 
@@ -1777,7 +1777,7 @@ function App() {
 
   // Editor base styles to ensure identical rendering
   const editorBaseStyles: React.CSSProperties = {
-    padding: '40px 40px 30px 40px',
+    padding: '30px 24px 20px 24px',
     fontSize: `${fontSize}px`,
     lineHeight: '1.6',
     fontFamily: '"Sarabun", "Inter", sans-serif',
@@ -1800,7 +1800,7 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '100dvh', maxHeight: '100dvh', width: '100%', overflow: 'hidden' }}>
       
       {/* Autocomplete Overlay */}
       {autocomplete.visible && (
@@ -1821,21 +1821,24 @@ function App() {
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between', 
-          padding: isMenuBarCollapsed ? '3px 8px' : '6px 12px', 
-          minHeight: isMenuBarCollapsed ? '34px' : '44px',
+          padding: isMenuBarCollapsed ? '2px 6px' : '4px 8px', 
+          minHeight: isMenuBarCollapsed ? '32px' : '42px',
           backgroundColor: '#f3f4f6', 
           borderBottom: '1px solid #e5e7eb',
           boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
           transition: 'all 0.2s ease-in-out',
-          overflow: 'visible',
-          whiteSpace: 'nowrap'
+          overflowX: 'auto',
+          overflowY: 'visible',
+          scrollbarWidth: 'none',
+          whiteSpace: 'nowrap',
+          maxWidth: '100vw'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '3px' : '6px', flexShrink: 0 }}>
           {/* Save Status Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '3px' : '6px', marginRight: isMenuBarCollapsed ? '4px' : '8px' }} className="shrink-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '2px' : '4px', marginRight: isMenuBarCollapsed ? '3px' : '6px' }} className="shrink-0">
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} title={hasUnsavedChanges ? "Unsaved changes" : "Saved"} className="shrink-0">
-              <Save size={isMenuBarCollapsed ? 15 : 18} color="#4b5563" className="shrink-0" />
+              <Save size={isMenuBarCollapsed ? 15 : 17} color="#4b5563" className="shrink-0" />
               {hasUnsavedChanges && (
                 <div style={{
                   position: 'absolute',
@@ -1850,7 +1853,7 @@ function App() {
               )}
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', borderLeft: '1px solid #d1d5db', paddingLeft: isMenuBarCollapsed ? '4px' : '6px' }} className="shrink-0">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', borderLeft: '1px solid #d1d5db', paddingLeft: isMenuBarCollapsed ? '3px' : '5px' }} className="shrink-0">
               <button 
                 onClick={handleUndo} 
                 disabled={!canUndo}
@@ -1870,11 +1873,11 @@ function App() {
               <button 
                 onClick={() => setIsHistoryModalOpen(true)} 
                 className="menu-btn shrink-0" 
-                style={{ marginLeft: isMenuBarCollapsed ? '2px' : '3px' }}
+                style={{ marginLeft: isMenuBarCollapsed ? '1px' : '2px' }}
                 title="ประวัติการบันทึกข้อความย้อนหลัง (ป้องกันข้อความหายในเครื่อง)"
               >
                 <History size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
-                {!isMenuBarCollapsed && <span>ประวัติ</span>}
+                {!isMenuBarCollapsed && <span className="hidden xl:inline">ประวัติ</span>}
               </button>
             </div>
           </div>
@@ -1889,7 +1892,7 @@ function App() {
             title={isConfirmingClear ? 'คลิกอีกครั้งเพื่อยืนยันล้างข้อความ!' : 'ล้างข้อความทั้งหมด (มีระบบสำรองข้อมูลฉุกเฉิน)'}
           >
             <Eraser size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
-            {!isMenuBarCollapsed && <span>{isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ'}</span>}
+            {!isMenuBarCollapsed && <span className="hidden sm:inline">{isConfirmingClear ? 'ยืนยัน?' : 'ล้างข้อความ'}</span>}
           </button>
           {/* Copy Split Button (Horizontal) */}
           <div className="relative inline-flex items-center shrink-0" ref={copyMenuRef}>
@@ -1897,7 +1900,7 @@ function App() {
               {/* Action 1: Click Icon to Copy All Text Immediately */}
               <button 
                 onClick={handleCopy} 
-                className={`${isMenuBarCollapsed ? 'px-1.5 py-1' : 'px-2 md:px-2.5 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer shrink-0`}
+                className={`${isMenuBarCollapsed ? 'px-1.5 py-1' : 'px-1.5 md:px-2 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-l flex items-center justify-center transition-colors text-gray-700 hover:text-blue-600 cursor-pointer shrink-0`}
                 title="คัดลอกข้อความทั้งหมด (คลิกไอคอนเพื่อคัดลอกทันที)"
               >
                 <Copy size={isMenuBarCollapsed ? 13 : 15} className="shrink-0" />
@@ -1909,10 +1912,10 @@ function App() {
               {/* Action 2: Click Label & Arrow to Open Copy Options */}
               <button 
                 onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)} 
-                className={`${isMenuBarCollapsed ? 'px-1 py-1' : 'px-1.5 md:px-2 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-xs md:text-sm font-sans whitespace-nowrap shrink-0 ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
+                className={`${isMenuBarCollapsed ? 'px-1 py-1' : 'px-1 md:px-1.5 py-1'} hover:bg-gray-200 active:bg-gray-300 rounded-r flex items-center gap-1 transition-colors cursor-pointer text-xs md:text-sm font-sans whitespace-nowrap shrink-0 ${isCopyMenuOpen ? 'text-blue-600 font-semibold' : 'text-gray-700'}`}
                 title="ตัวเลือกการคัดลอก (คลิกเพื่อเลือกคัดลอกข้อความหรือคลิปบอร์ด)"
               >
-                {!isMenuBarCollapsed && <span>คัดลอก</span>}
+                {!isMenuBarCollapsed && <span className="hidden sm:inline">คัดลอก</span>}
                 <ChevronDown size={isMenuBarCollapsed ? 10 : 12} className={`transition-transform duration-200 shrink-0 ${isCopyMenuOpen ? 'rotate-180 text-blue-600' : 'text-gray-500'}`} />
               </button>
             </div>
@@ -1962,7 +1965,7 @@ function App() {
             title="พิมพ์ส่วนหัวจากการประชุม"
           >
             <Layout size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
-            {!isMenuBarCollapsed && <span>พิมพ์ส่วนหัว</span>}
+            {!isMenuBarCollapsed && <span className="hidden lg:inline">พิมพ์ส่วนหัว</span>}
           </button>
           <button 
             onClick={() => setIsSpeechTranscriberOpen(true)} 
@@ -1970,31 +1973,31 @@ function App() {
             title="พิมพ์ด้วยเสียง (Speech to Text)"
           >
             <Mic size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
-            {!isMenuBarCollapsed && <span>พิมพ์ด้วยเสียง</span>}
+            {!isMenuBarCollapsed && <span className="hidden sm:inline">พิมพ์ด้วยเสียง</span>}
           </button>
 
           {/* Font Size Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', marginLeft: isMenuBarCollapsed ? '2px' : '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: isMenuBarCollapsed ? '4px' : '6px' }} className="shrink-0">
-            {!isMenuBarCollapsed && <Type size={14} color="#6b7280" style={{ marginRight: '4px' }} className="shrink-0 hidden sm:inline-block" />}
-            <button onClick={handleDecreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px' }} title="ลดขนาดตัวอักษร">
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: isMenuBarCollapsed ? '1px' : '3px', borderLeft: '1px solid #e5e7eb', paddingLeft: isMenuBarCollapsed ? '3px' : '5px' }} className="shrink-0">
+            {!isMenuBarCollapsed && <Type size={14} color="#6b7280" style={{ marginRight: '3px' }} className="shrink-0 hidden md:inline-block" />}
+            <button onClick={handleDecreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 3px' : '3px 5px' }} title="ลดขนาดตัวอักษร">
               <Minus size={isMenuBarCollapsed ? 11 : 13} />
             </button>
-            <span style={{ margin: isMenuBarCollapsed ? '0 2px' : '0 4px', fontSize: isMenuBarCollapsed ? '11px' : '13px', color: '#374151', minWidth: '16px', textAlign: 'center' }} className="shrink-0">{fontSize}</span>
-            <button onClick={handleIncreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px' }} title="เพิ่มขนาดตัวอักษร">
+            <span style={{ margin: isMenuBarCollapsed ? '0 1px' : '0 3px', fontSize: isMenuBarCollapsed ? '11px' : '13px', color: '#374151', minWidth: '16px', textAlign: 'center' }} className="shrink-0">{fontSize}</span>
+            <button onClick={handleIncreaseFontSize} className="menu-btn shrink-0" style={{ padding: isMenuBarCollapsed ? '2px 3px' : '3px 5px' }} title="เพิ่มขนาดตัวอักษร">
               <Plus size={isMenuBarCollapsed ? 11 : 13} />
             </button>
           </div>
 
           {/* Settings Dropdown */}
-          <div className="relative shrink-0" ref={settingsMenuRef} style={{ marginLeft: isMenuBarCollapsed ? '2px' : '4px' }}>
+          <div className="relative shrink-0" ref={settingsMenuRef} style={{ marginLeft: isMenuBarCollapsed ? '1px' : '3px' }}>
             <button 
               onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)} 
               className={`menu-btn shrink-0 ${isSettingsMenuOpen ? 'bg-blue-50 text-blue-600' : ''}`}
               title="ตั้งค่า (คำย่อ/คีย์ลัด)"
             >
               <Settings size={isMenuBarCollapsed ? 14 : 15} style={{ marginRight: isMenuBarCollapsed ? '0' : '4px' }} className="shrink-0" />
-              {!isMenuBarCollapsed && <span>ตั้งค่า</span>}
-              <ChevronDown size={isMenuBarCollapsed ? 10 : 12} style={{ marginLeft: isMenuBarCollapsed ? '1px' : '3px' }} className="shrink-0" />
+              {!isMenuBarCollapsed && <span className="hidden sm:inline">ตั้งค่า</span>}
+              <ChevronDown size={isMenuBarCollapsed ? 10 : 12} style={{ marginLeft: isMenuBarCollapsed ? '1px' : '2px' }} className="shrink-0" />
             </button>
             
             {isSettingsMenuOpen && (
@@ -2025,14 +2028,14 @@ function App() {
         </div>
 
         {/* Right Section: Tool Toggles + Clock + Menu Bar Fold/Expand Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '4px' : '8px', flexShrink: 0 }} className="text-xs md:text-sm font-medium text-gray-700">
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMenuBarCollapsed ? '3px' : '6px', flexShrink: 0 }} className="text-xs md:text-sm font-medium text-gray-700">
           {/* Left Clipboard Toggle */}
           <button 
             className="menu-btn shrink-0" 
             onClick={() => setIsLeftClipboardOpen(!isLeftClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดซ้าย"
             style={{ 
-              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
+              padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px', 
               color: isLeftClipboardOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isLeftClipboardOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
@@ -2047,7 +2050,7 @@ function App() {
             onClick={() => setIsClipboardOpen(!isClipboardOpen)}
             title="เปิด/ปิด คลิปบอร์ดขวา"
             style={{ 
-              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
+              padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px', 
               color: isClipboardOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isClipboardOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
@@ -2062,7 +2065,7 @@ function App() {
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             title="เปิด/ปิด ผู้ช่วยค้นหา Google"
             style={{ 
-              padding: isMenuBarCollapsed ? '2px 5px' : '4px 7px', 
+              padding: isMenuBarCollapsed ? '2px 4px' : '3px 6px', 
               color: isSearchOpen ? '#2563eb' : '#6b7280',
               backgroundColor: isSearchOpen ? '#eff6ff' : 'transparent',
               borderRadius: '4px'
@@ -2073,15 +2076,15 @@ function App() {
           
           {/* Clock */}
           <div style={{ 
-            marginLeft: isMenuBarCollapsed ? '2px' : '4px', 
+            marginLeft: isMenuBarCollapsed ? '1px' : '3px', 
             borderLeft: '1px solid #e5e7eb', 
-            paddingLeft: isMenuBarCollapsed ? '6px' : '8px'
+            paddingLeft: isMenuBarCollapsed ? '4px' : '6px'
           }} className="shrink-0">
             <Clock />
           </div>
 
           {/* Menu Bar Collapse / Expand Toggle Button (หลังนาฬิกา) */}
-          <div style={{ marginLeft: '2px', borderLeft: '1px solid #e5e7eb', paddingLeft: '6px' }} className="shrink-0">
+          <div style={{ marginLeft: '2px', borderLeft: '1px solid #e5e7eb', paddingLeft: '4px' }} className="shrink-0">
             <button
               onClick={toggleMenuBar}
               className={`flex items-center justify-center cursor-pointer transition-all duration-200 p-1 rounded shrink-0 ${
@@ -2102,14 +2105,14 @@ function App() {
       </div>
 
       {/* Main Content Area */}
-      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', padding: '10px', backgroundColor: '#e5e7eb' }}>
+      <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', padding: '6px', backgroundColor: '#e5e7eb', minHeight: 0 }}>
         
         {/* Left Clipboard Panel */}
         <div 
           className={`clipboard-panel ${isLeftClipboardOpen ? 'open' : ''}`}
           style={{ 
             display: isLeftClipboardOpen ? 'flex' : 'none',
-            marginRight: '10px',
+            marginRight: '6px',
             height: '100%'
           }}
         >
@@ -2122,7 +2125,7 @@ function App() {
         </div>
 
         {/* Text Area Container */}
-        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', margin: 0, padding: '0 20px', position: 'relative', overflow: 'visible' }}>
+        <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, margin: 0, padding: '0 4px', position: 'relative', overflow: 'visible' }}>
             <div 
               ref={editorContainerRef}
               style={{ position: 'relative', width: '100%', height: '100%', maxWidth: '900px', margin: '0 auto' }}
@@ -2232,7 +2235,7 @@ function App() {
           className={`clipboard-panel ${isClipboardOpen ? 'open' : ''}`}
           style={{ 
             display: isClipboardOpen ? 'flex' : 'none',
-            marginLeft: '10px',
+            marginLeft: '6px',
             height: '100%'
           }}
         >
@@ -2246,7 +2249,7 @@ function App() {
 
         {/* Committee Identifier Panel */}
         {isCommitteeIdentifierOpen && (
-          <div style={{ height: '100%', marginLeft: '10px' }}>
+          <div style={{ height: '100%', marginLeft: '6px' }}>
             <CommitteeIdentifier 
               isOpen={isCommitteeIdentifierOpen} 
               onClose={() => setIsCommitteeIdentifierOpen(false)} 
@@ -2259,8 +2262,8 @@ function App() {
 
       </div>
 
-      <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
-        <span>เวอร์ชั่น 5.18 26/08/69 16.05</span>
+      <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
+        <span>เวอร์ชั่น 5.19 27/08/69 19.12</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>
