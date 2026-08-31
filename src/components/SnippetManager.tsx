@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, X, Save, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, X, Save, RotateCcw, Pencil, Check } from 'lucide-react';
 
 export interface Snippet {
   id: string;
@@ -19,6 +19,9 @@ export const SnippetManager: React.FC<SnippetManagerProps> = ({ isOpen, onClose,
   const [snippets, setSnippets] = useState<Snippet[]>(initialSnippets);
   const [newAbbr, setNewAbbr] = useState('');
   const [newFullText, setNewFullText] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAbbr, setEditAbbr] = useState('');
+  const [editFullText, setEditFullText] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean, message: string, onConfirm: () => void }>({
     show: false,
     message: '',
@@ -28,6 +31,9 @@ export const SnippetManager: React.FC<SnippetManagerProps> = ({ isOpen, onClose,
   useEffect(() => {
     if (isOpen) {
         setSnippets(initialSnippets);
+        setEditingId(null);
+        setEditAbbr('');
+        setEditFullText('');
     }
   }, [isOpen, initialSnippets]);
 
@@ -44,7 +50,29 @@ export const SnippetManager: React.FC<SnippetManagerProps> = ({ isOpen, onClose,
     }
   };
 
+  const startEditing = (snippet: Snippet) => {
+    setEditingId(snippet.id);
+    setEditAbbr(snippet.abbr);
+    setEditFullText(snippet.fullText);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditAbbr('');
+    setEditFullText('');
+  };
+
+  const handleSaveEdit = (id: string) => {
+    if (editAbbr.trim() && editFullText.trim()) {
+      setSnippets(snippets.map(s => s.id === id ? { ...s, abbr: editAbbr.trim(), fullText: editFullText } : s));
+      cancelEditing();
+    }
+  };
+
   const handleDelete = (id: string) => {
+    if (editingId === id) {
+      cancelEditing();
+    }
     setSnippets(snippets.filter(s => s.id !== id));
   };
 
@@ -54,6 +82,7 @@ export const SnippetManager: React.FC<SnippetManagerProps> = ({ isOpen, onClose,
       message: 'คุณต้องการรีเซ็ตคำย่อทั้งหมดกลับเป็นค่าเริ่มต้นหรือไม่?',
       onConfirm: () => {
         setSnippets(defaultSnippets);
+        cancelEditing();
       }
     });
   };
@@ -129,33 +158,159 @@ export const SnippetManager: React.FC<SnippetManagerProps> = ({ isOpen, onClose,
             <div style={{ padding: '20px', textAlign: 'center', color: '#888', fontFamily: 'Sarabun, sans-serif' }}>ยังไม่มีคำย่อที่บันทึกไว้</div>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {snippets.map((snippet, index) => (
-                <li key={snippet.id} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px',
-                  borderBottom: '1px solid #eee',
-                  backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white',
-                  fontFamily: 'Sarabun, sans-serif'
-                }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1, overflow: 'hidden' }}>
-                    <span style={{ fontWeight: 'bold', minWidth: '60px', color: '#2563eb' }}>{snippet.abbr}</span>
-                    <span style={{ color: '#9ca3af' }}>→</span>
-                    <span style={{ color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={snippet.fullText}>{snippet.fullText}</span>
-                  </div>
-                  <button onClick={() => handleDelete(snippet.id)} style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#ef4444',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    marginLeft: '8px'
-                  }} title="ลบ">
-                    <Trash2 size={16} />
-                  </button>
-                </li>
-              ))}
+              {snippets.map((snippet, index) => {
+                const isEditing = editingId === snippet.id;
+                return (
+                  <li key={snippet.id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 10px',
+                    borderBottom: '1px solid #eee',
+                    backgroundColor: isEditing ? '#eff6ff' : (index % 2 === 0 ? '#f9f9f9' : 'white'),
+                    fontFamily: 'Sarabun, sans-serif'
+                  }}>
+                    {isEditing ? (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
+                        <input
+                          type="text"
+                          value={editAbbr}
+                          onChange={(e) => setEditAbbr(e.target.value)}
+                          placeholder="คำย่อ"
+                          style={{
+                            width: '90px',
+                            padding: '6px 8px',
+                            border: '1px solid #3b82f6',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: '#1e40af',
+                            backgroundColor: '#fff',
+                            fontFamily: 'Sarabun, sans-serif'
+                          }}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit(snippet.id);
+                            if (e.key === 'Escape') cancelEditing();
+                          }}
+                        />
+                        <span style={{ color: '#9ca3af' }}>→</span>
+                        <input
+                          type="text"
+                          value={editFullText}
+                          onChange={(e) => setEditFullText(e.target.value)}
+                          placeholder="ข้อความเต็ม"
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            border: '1px solid #3b82f6',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            color: '#1f2937',
+                            backgroundColor: '#fff',
+                            fontFamily: 'Sarabun, sans-serif'
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit(snippet.id);
+                            if (e.key === 'Escape') cancelEditing();
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1, overflow: 'hidden' }}>
+                        <span style={{ fontWeight: 'bold', minWidth: '60px', color: '#2563eb' }}>{snippet.abbr}</span>
+                        <span style={{ color: '#9ca3af' }}>→</span>
+                        <span style={{ color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={snippet.fullText}>{snippet.fullText}</span>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', alignItems: 'center' }}>
+                      {isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(snippet.id)}
+                            disabled={!editAbbr.trim() || !editFullText.trim()}
+                            style={{
+                              backgroundColor: '#2563eb',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              padding: '5px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '12px',
+                              opacity: (!editAbbr.trim() || !editFullText.trim()) ? 0.5 : 1
+                            }}
+                            title="บันทึกการแก้ไข"
+                          >
+                            <Check size={14} /> บันทึก
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            style={{
+                              backgroundColor: '#e5e7eb',
+                              color: '#374151',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              padding: '5px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              fontSize: '12px'
+                            }}
+                            title="ยกเลิก"
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEditing(snippet)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#2563eb',
+                              cursor: 'pointer',
+                              padding: '4px 6px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              fontSize: '12px'
+                            }}
+                            title="แก้ไขคำย่อนี้"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(snippet.id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '4px 6px',
+                              borderRadius: '4px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title="ลบคำย่อนี้"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

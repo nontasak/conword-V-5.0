@@ -418,28 +418,29 @@ function App() {
   };
 
   const handleToolbarAddToClip = (storageKey: string, sideName: string, textToClip: string) => {
+    if (!textToClip || !textToClip.trim()) return;
+
     const savedItems = localStorage.getItem(storageKey);
     let items: any[] = [];
     if (savedItems) {
       try { items = JSON.parse(savedItems); } catch (e) {}
     }
     
-    const lines = textToClip.split(/\r?\n|\r/);
-    lines.forEach(line => {
-      const subItems = line.split(/(?<=:)/);
-      subItems.forEach(subItem => {
-        if (subItem.trim() !== '') {
-          items.push({
-            id: `item-${Date.now()}-${Math.random()}`,
-            text: subItem
-          });
-        }
+    const lines = textToClip.split(/\r?\n|\r/).map(line => line.trim()).filter(line => line.length > 0);
+    lines.forEach((line, idx) => {
+      items.push({
+        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        text: line
       });
     });
 
     localStorage.setItem(storageKey, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('clipboard-updated', { detail: { storageKey } }));
     window.dispatchEvent(new CustomEvent(`clipboard-update-${storageKey}`));
     showAlert(`เพิ่มลงคลิปบอร์ด${sideName}แล้ว!`);
+
+    if (storageKey === 'clipListLeft' && !isLeftClipboardOpen) setIsLeftClipboardOpen(true);
+    if (storageKey === 'clipList' && !isClipboardOpen) setIsClipboardOpen(true);
   };
 
   const handleToolbarInsertLastLine = (textToInsert: string) => {
@@ -1751,7 +1752,7 @@ function App() {
   };
 
   const handleContextAddToClip = (storageKey: string, sideName: string) => {
-    if (!contextMenu.selectedText) return;
+    if (!contextMenu.selectedText || !contextMenu.selectedText.trim()) return;
     
     const savedItems = localStorage.getItem(storageKey);
     let items: any[] = [];
@@ -1759,20 +1760,16 @@ function App() {
       try { items = JSON.parse(savedItems); } catch (e) {}
     }
     
-    const lines = contextMenu.selectedText.split(/\r?\n|\r/);
-    lines.forEach(line => {
-      const subItems = line.split(/(?<=:)/);
-      subItems.forEach(subItem => {
-        if (subItem.trim() !== '') {
-          items.push({
-            id: `item-${Date.now()}-${Math.random()}`,
-            text: subItem
-          });
-        }
+    const lines = contextMenu.selectedText.split(/\r?\n|\r/).map(line => line.trim()).filter(line => line.length > 0);
+    lines.forEach((line, idx) => {
+      items.push({
+        id: `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        text: line
       });
     });
 
     localStorage.setItem(storageKey, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('clipboard-updated', { detail: { storageKey } }));
     window.dispatchEvent(new CustomEvent(`clipboard-update-${storageKey}`));
     showAlert(`เพิ่มข้อความลงคลิปบอร์ด${sideName}แล้ว!`);
     
@@ -2306,7 +2303,7 @@ function App() {
       </div>
 
       <div className="footer" style={{ position: 'static', backgroundColor: '#f3f4f6', padding: '4px 10px', fontSize: '11px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span>เวอร์ชั่น 5.28 27/08/69 21.00</span>
+        <span>เวอร์ชั่น 5.30 30/08/69 18.55</span>
         <a href="https://www.canva.com/design/DAGQm3V8WFA/FJqJY5z6LUMYFrRvCZsr2w/edit?utm_content=DAGQm3V8WFA&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" target="_blank" rel="noreferrer" style={{ color: '#4b5563' }}>
             คู่มือ
         </a>

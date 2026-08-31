@@ -83,9 +83,14 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
     }
   }, [items, isLoaded, storageKey]);
 
-  // Listen for external updates (e.g., from Context Menu)
+  // Listen for external updates (e.g., from Context Menu or Selection Toolbar)
   useEffect(() => {
-    const handleExternalUpdate = () => {
+    const handleExternalUpdate = (e?: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent && customEvent.detail && customEvent.detail.storageKey && customEvent.detail.storageKey !== storageKey) {
+        return;
+      }
+
       const savedItems = localStorage.getItem(storageKey);
       if (savedItems) {
         try {
@@ -100,12 +105,20 @@ export const Clipboard: React.FC<ClipboardProps> = ({ onPaste, height, storageKe
         } catch (e) {
           console.error("Failed to parse clipboard items", e);
         }
+      } else {
+        setItems([]);
       }
     };
 
+    const specificEventName = `clipboard-update-${storageKey}`;
     window.addEventListener('clipboard-updated', handleExternalUpdate);
+    window.addEventListener(specificEventName, handleExternalUpdate);
+    window.addEventListener('storage', handleExternalUpdate);
+
     return () => {
       window.removeEventListener('clipboard-updated', handleExternalUpdate);
+      window.removeEventListener(specificEventName, handleExternalUpdate);
+      window.removeEventListener('storage', handleExternalUpdate);
     };
   }, [storageKey]);
 
